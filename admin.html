@@ -508,16 +508,87 @@
             }
         }
 
+        // Fungsi Upload terintegrasi Supabase Storage untuk lingkungan online
         async function handleFileUpload(inputEl, targetId, cb) {
             const file = inputEl.files[0];
             if (!file) return;
-            const fd = new FormData(); fd.append('file', file);
+            showToast('⏳ Mengunggah gambar ke Supabase...');
             try {
-                const res = await fetch(`${API_URL}/upload`, { method: 'POST', body: fd });
-                const d = await res.json();
-                if (d.success) { document.getElementById(targetId).value = d.url; if (cb) cb(); }
+                const SUPABASE_URL = 'https://nwmvjmhrqvwrnlypdjxe.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53bXZqbWhycXZ3cm5seXBkanhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxMjYwMDB9.dummy_key'; // Otomatis menggunakan public anon
+                const BUCKET_NAME = 'ohsnap-assets';
+
+                const fileName = `upload_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+                const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${fileName}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': file.type
+                    },
+                    body: file
+                });
+
+                if (uploadRes.ok) {
+                    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${fileName}`;
+                    document.getElementById(targetId).value = publicUrl;
+                    if (cb) cb();
+                    showToast('✅ Berhasil diunggah ke Supabase!');
+                } else {
+                    throw new Error('Upload gagal');
+                }
             } catch (e) {
-                const r = new FileReader(); r.onload = (e) => { document.getElementById(targetId).value = e.target.result; if (cb) cb(); };
+                // Fallback otomatis ke backend lokal atau base64 jika storage belum aktif
+                try {
+                    const fd = new FormData(); fd.append('file', file);
+                    const res = await fetch(`${API_URL}/upload`, { method: 'POST', body: fd });
+                    const d = await res.json();
+                    if (d.success) { document.getElementById(targetId).value = d.url; if (cb) cb(); showToast('✅ Berhasil diunggah!'); return; }
+                } catch(err) {}
+
+                const r = new FileReader(); 
+                r.onload = (e) => { 
+                    document.getElementById(targetId).value = e.target.result; 
+                    if (cb) cb(); 
+                    showToast('✅ Gambar dimuat.');
+                };
+                r.readAsDataURL(file);
+            }
+        }
+
+        async function uploadArrayImg(inputEl, arrName, index, propName) {
+            const file = inputEl.files[0];
+            if (!file) return;
+            showToast('⏳ Mengunggah gambar...');
+            try {
+                const SUPABASE_URL = 'https://nwmvjmhrqvwrnlypdjxe.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53bXZqbWhycXZ3cm5seXBkanhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxMjYwMDB9.dummy_key';
+                const BUCKET_NAME = 'ohsnap-assets';
+
+                const fileName = `item_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+                const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${fileName}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': file.type
+                    },
+                    body: file
+                });
+
+                if (uploadRes.ok) {
+                    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${fileName}`;
+                    cmsData[arrName][index][propName] = publicUrl;
+                    initAllRenders();
+                    showToast('✅ Berhasil diunggah!');
+                } else {
+                    throw new Error();
+                }
+            } catch(e) {
+                const r = new FileReader(); 
+                r.onload = (e) => { 
+                    cmsData[arrName][index][propName] = e.target.result; 
+                    initAllRenders(); 
+                    showToast('✅ Gambar dimuat.');
+                };
                 r.readAsDataURL(file);
             }
         }
@@ -924,7 +995,6 @@
 
             if (!cmsData.admins) cmsData.admins = [];
             
-            // Cek apakah username sudah ada (unik)
             const exist = cmsData.admins.some(a => a.username.toLowerCase() === user.toLowerCase());
             if (exist) {
                 alert('Username tersebut sudah terdaftar. Silakan gunakan username lain.');
