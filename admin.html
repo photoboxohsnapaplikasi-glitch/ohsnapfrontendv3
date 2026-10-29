@@ -508,81 +508,31 @@
             }
         }
 
-        // Fungsi Upload gambar standar/Supabase yang stabil
+        // Perbaikan handler upload foto lokal (About & Banner)
         async function handleFileUpload(inputEl, targetId, cb) {
             const file = inputEl.files[0];
             if (!file) return;
-            showToast('⏳ Mengunggah gambar...');
-            try {
-                const SUPABASE_URL = 'https://nwmvjmhrqvwrnlypdjxe.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53bXZqbWhycXZ3cm5seXBkanhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxMjYwMDB9.dummy_key';
-                const BUCKET_NAME = 'ohsnap-assets';
-
-                const fileName = `upload_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-                const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${fileName}`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                        'Content-Type': file.type
-                    },
-                    body: file
-                });
-
-                if (uploadRes.ok) {
-                    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${fileName}`;
-                    document.getElementById(targetId).value = publicUrl;
-                    if (cb) cb();
-                    showToast('✅ Berhasil diunggah!');
-                } else {
-                    throw new Error();
-                }
-            } catch (e) {
-                const r = new FileReader(); 
-                r.onload = (e) => { 
-                    document.getElementById(targetId).value = e.target.result; 
-                    if (cb) cb(); 
-                    showToast('✅ Gambar dimuat.');
-                };
-                r.readAsDataURL(file);
-            }
+            showToast('⏳ Memuat file lokal...');
+            const r = new FileReader(); 
+            r.onload = (e) => { 
+                document.getElementById(targetId).value = e.target.result; 
+                if (cb) cb(); 
+                showToast('✅ Berhasil dimuat!');
+            };
+            r.readAsDataURL(file);
         }
 
         async function uploadArrayImg(inputEl, arrName, index, propName) {
             const file = inputEl.files[0];
             if (!file) return;
-            showToast('⏳ Mengunggah gambar...');
-            try {
-                const SUPABASE_URL = 'https://nwmvjmhrqvwrnlypdjxe.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53bXZqbWhycXZ3cm5seXBkanhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxMjYwMDB9.dummy_key';
-                const BUCKET_NAME = 'ohsnap-assets';
-
-                const fileName = `item_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-                const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${fileName}`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                        'Content-Type': file.type
-                    },
-                    body: file
-                });
-
-                if (uploadRes.ok) {
-                    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${fileName}`;
-                    cmsData[arrName][index][propName] = publicUrl;
-                    initAllRenders();
-                    showToast('✅ Berhasil diunggah!');
-                } else {
-                    throw new Error();
-                }
-            } catch(e) {
-                const r = new FileReader(); 
-                r.onload = (e) => { 
-                    cmsData[arrName][index][propName] = e.target.result; 
-                    initAllRenders(); 
-                    showToast('✅ Gambar dimuat.');
-                };
-                r.readAsDataURL(file);
-            }
+            showToast('⏳ Memuat file lokal...');
+            const r = new FileReader(); 
+            r.onload = (e) => { 
+                cmsData[arrName][index][propName] = e.target.result; 
+                initAllRenders(); 
+                showToast('✅ Berhasil dimuat!');
+            };
+            r.readAsDataURL(file);
         }
 
         function loadBannerByPage() {
@@ -651,7 +601,6 @@
             document.getElementById('subFrameId').value = cmsData.titles.subFrameId || '';
         }
 
-        // Render video dengan format link yang mendukung autoplay dan anti tabrakan suara
         function renderVideos() {
             const c = document.getElementById('videoListContainer'); if (!c) return; c.innerHTML = '';
             const total = cmsData.videos.length;
@@ -659,7 +608,7 @@
                 let navHtml = total > 5 ? `<div>${i > 0 ? `<button type="button" class="order-nav-btn" onclick="moveVideo(${i}, -1)">&lt;</button>` : ''}${i < total - 1 ? `<button type="button" class="order-nav-btn" onclick="moveVideo(${i}, 1)">&gt;</button>` : ''}</div>` : '';
                 c.innerHTML += `<div class="item-card"><h4><span>Video #${i+1}</span><div style="display:flex;gap:6px;align-items:center;">${navHtml}<button class="btn-remove" onclick="removeVideo(${i})">Hapus</button></div></h4>
                     <div class="form-group"><label>Judul</label><input type="text" value="${v.title || ''}" oninput="cmsData.videos[${i}].title=this.value"></div>
-                    <div class="form-group"><label>Link Video (TikTok / IG / MP4)</label><input type="text" value="${v.url || ''}" placeholder="https://www.tiktok.com/..." oninput="cmsData.videos[${i}].url=this.value"></div>
+                    <div class="form-group"><label>Link Video (Direct MP4 / Embed URL)</label><input type="text" value="${v.url || ''}" placeholder="Masukkan link video..." oninput="cmsData.videos[${i}].url=this.value"></div>
                     <div class="form-group"><label>Thumbnail</label><div class="input-with-clear"><input type="text" value="${v.thumb || ''}" oninput="cmsData.videos[${i}].thumb=this.value"><button type="button" class="btn-clear-input" onclick="clearArrayImg('videos',${i},'thumb')">❌ X</button></div><input type="file" accept="image/*" style="margin-top:6px;" onchange="uploadArrayImg(this,'videos',${i},'thumb')"></div></div>`;
             });
         }
