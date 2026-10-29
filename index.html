@@ -286,7 +286,8 @@
         const defaultCMS = {
             colors: { primary: '#ff1493', secondary: '#2b4c7e', bg: '#fff0f5', footer: '#18171d' },
             banners: {
-                home: { titleId: 'LANGSUNG CETAK BAWA PULANG', titleEn: 'INSTANT PRINT & TAKE IT HOME', subId: 'Photobox & Self-Photo Studio kekinian.', subEn: 'Trendy Photobox Studio.', imgUrl: 'images/hero-banner.jpg', aboutImgUrl: 'images/about-img.jpg' }
+                home: { titleId: 'LANGSUNG CETAK BAWA PULANG', titleEn: 'INSTANT PRINT & TAKE IT HOME', subId: 'Photobox & Self-Photo Studio kekinian.', subEn: 'Trendy Photobox Studio.', imgUrl: 'images/hero-banner.jpg', aboutImgUrl: 'images/about-img.jpg' },
+                about: { imgUrl: 'images/about-img.jpg' }
             },
             titles: { 
                 titlePromoId: 'Promo <span>Spesial</span> Bulan Ini', subPromoId: 'Jangan lewatkan penawaran menarik di berbagai cabang OH SNAP! Photobox', 
@@ -334,12 +335,17 @@
                 document.documentElement.style.setProperty('--bg-main', cms.colors.bg || '#fff0f5');
                 document.documentElement.style.setProperty('--footer-bg', cms.colors.footer || '#18171d');
             }
-            if (cms.banners && cms.banners.home) {
-                const b = cms.banners.home;
-                document.getElementById('heroTitle').innerHTML = currentLang === 'en' ? (b.titleEn || b.titleId) : b.titleId;
-                document.getElementById('heroSub').textContent = currentLang === 'en' ? (b.subEn || b.subId) : b.subId;
-                if (b.imgUrl) document.getElementById('heroBannerBg').style.backgroundImage = `url('${b.imgUrl}')`;
-                if (b.aboutImgUrl) document.getElementById('aboutImg').src = b.aboutImgUrl;
+            if (cms.banners) {
+                if (cms.banners.home) {
+                    const b = cms.banners.home;
+                    document.getElementById('heroTitle').innerHTML = currentLang === 'en' ? (b.titleEn || b.titleId) : b.titleId;
+                    document.getElementById('heroSub').textContent = currentLang === 'en' ? (b.subEn || b.subId) : b.subId;
+                    if (b.imgUrl) document.getElementById('heroBannerBg').style.backgroundImage = `url('${b.imgUrl}')`;
+                    if (b.aboutImgUrl) document.getElementById('aboutImg').src = b.aboutImgUrl;
+                }
+                if (cms.banners.about && cms.banners.about.imgUrl) {
+                    document.getElementById('aboutImg').src = cms.banners.about.imgUrl;
+                }
             }
             if (cms.titles) {
                 document.getElementById('secPromoTitle').innerHTML = cms.titles.titlePromoId || defaultCMS.titles.titlePromoId;
@@ -350,7 +356,7 @@
                 document.getElementById('secVideoSub').textContent = cms.titles.subVideoId || defaultCMS.titles.subVideoId;
             }
 
-            // Render Studios (Slider Portrait 4 Kolom dengan Placeholder Pasti Muncul)
+            // Render Studios
             const studiosList = (cms.studios && cms.studios.length > 0) ? cms.studios : defaultCMS.studios;
             document.getElementById('studioGrid').innerHTML = studiosList.map(s => `
                 <div class="slide-item-studio">
@@ -366,7 +372,7 @@
                 </div>
             `).join('');
 
-            // Render Promos (Slider Portrait 3 Kolom dengan Placeholder Pasti Muncul)
+            // Render Promos
             const promosList = (cms.promos && cms.promos.length > 0) ? cms.promos : defaultCMS.promos;
             document.getElementById('promoGrid').innerHTML = promosList.map(p => `
                 <div class="slide-item-promo">
@@ -383,21 +389,29 @@
                 </div>
             `).join('');
 
-            // Render Videos (Slider Portrait 5 Kolom dengan Placeholder Pasti Muncul)
+            // Render Videos (Diperbarui agar mendukung pemutaran video / iframe / thumbnail secara otomatis)
             const videosList = (cms.videos && cms.videos.length > 0) ? cms.videos : defaultCMS.videos;
-            document.getElementById('videoGrid').innerHTML = videosList.map(v => `
-                <div class="slide-item-video">
-                    ${v.thumb && v.thumb.trim() !== '' ? `<img src="${v.thumb}" alt="Video" style="width: 100%; height: 420px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8; box-shadow: 0 6px 20px rgba(255,182,193,0.18);" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'empty-portrait-video\'></div>';">` : `<div class="empty-portrait-video"></div>`}
-                </div>
-            `).join('');
+            document.getElementById('videoGrid').innerHTML = videosList.map(v => {
+                let mediaContent = `<div class="empty-portrait-video"></div>`;
+                if (v.url && v.url !== '#' && v.url.trim() !== '') {
+                    if (v.url.endsWith('.mp4') || v.url.startsWith('blob:')) {
+                        mediaContent = `<video src="${v.url}" autoplay muted playsinline loop controls style="width: 100%; height: 420px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8;"></video>`;
+                    } else {
+                        mediaContent = `<iframe src="${v.url}" style="width: 100%; height: 420px; border: 2px solid #fbcfe8; border-radius: 24px;" allow="autoplay" allowfullscreen></iframe>`;
+                    }
+                } else if (v.thumb && v.thumb.trim() !== '') {
+                    mediaContent = `<img src="${v.thumb}" alt="Video" style="width: 100%; height: 420px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8;" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'empty-portrait-video\'></div>';">`;
+                }
+                return `<div class="slide-item-video">${mediaContent}</div>`;
+            }).join('');
 
             if (cms && cms.footer) {
                 document.getElementById('fBrand').textContent = cms.footer.brand;
                 document.getElementById('fBranches').textContent = cms.footer.branches;
                 const ig = document.getElementById('fIg'); if(ig) { ig.textContent = cms.footer.igName; ig.href = cms.footer.igUrl || '#'; }
                 const tt = document.getElementById('fTt'); if(tt) { tt.textContent = cms.footer.ttName; tt.href = cms.footer.ttUrl || '#'; }
-                document.getElementById('fCardTitle').textContent = cms.footer.cardTitle;
-                document.getElementById('fCardDesc').textContent = cms.footer.cardDesc;
+                document.getElementById('fCardTitle').textContent = cms.footer.cardTitle || 'Find nearby OH SNAP! Studio';
+                document.getElementById('fCardDesc').textContent = cms.footer.cardDesc || 'Temukan booth dan studio terdekat di kotamu untuk abadikan momen serumu hari ini!';
                 document.getElementById('fCopy').textContent = cms.footer.copyright;
             }
         }
