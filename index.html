@@ -63,18 +63,18 @@
         .btn-readmore:hover { transform: translateY(-2px); }
 
         .about-img-box {
-            width: 100%; height: 320px; border-radius: 20px; overflow: hidden;
+            width: 100%; height: 350px; border-radius: 20px; overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.08); background: #fff; border: 2px solid #fbcfe8;
         }
         .about-img-box img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* KOTAK PLACEHOLDER PORTRAIT 9:16 YANG PASTI MUNCUL */
+        /* KOTAK PLACEHOLDER PORTRAIT 9:16 PENUH */
         .empty-portrait-box {
-            width: 100%; height: 380px; background: #ffffff; border: 2px solid #fbcfe8; border-radius: 20px;
+            width: 100%; height: 460px; background: #ffffff; border: 2px solid #fbcfe8; border-radius: 20px;
             display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(255, 182, 193, 0.15);
         }
         .empty-portrait-video {
-            width: 100%; height: 420px; background: #ffffff; border: 2px solid #fbcfe8; border-radius: 24px;
+            width: 100%; height: 480px; background: #ffffff; border: 2px solid #fbcfe8; border-radius: 24px;
             display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(255, 182, 193, 0.18);
         }
 
@@ -103,7 +103,7 @@
 
         .slide-item-studio { flex: 0 0 calc(25% - 15px); min-width: 250px; }
         .slide-item-promo { flex: 0 0 calc(33.333% - 14px); min-width: 280px; }
-        .slide-item-video { flex: 0 0 calc(20% - 16px); min-width: 220px; }
+        .slide-item-video { flex: 0 0 calc(20% - 16px); min-width: 240px; }
 
         .slider-btn {
             position: absolute;
@@ -343,8 +343,10 @@
                     if (b.imgUrl) document.getElementById('heroBannerBg').style.backgroundImage = `url('${b.imgUrl}')`;
                     if (b.aboutImgUrl) document.getElementById('aboutImg').src = b.aboutImgUrl;
                 }
-                if (cms.banners.about && cms.banners.about.imgUrl) {
-                    document.getElementById('aboutImg').src = cms.banners.about.imgUrl;
+                if (cms.banners.about) {
+                    if (cms.banners.about.imgUrl) {
+                        document.getElementById('aboutImg').src = cms.banners.about.imgUrl;
+                    }
                 }
             }
             if (cms.titles) {
@@ -361,7 +363,7 @@
             document.getElementById('studioGrid').innerHTML = studiosList.map(s => `
                 <div class="slide-item-studio">
                     <div class="card-item">
-                        ${s.img && s.img.trim() !== '' ? `<img src="${s.img}" alt="${s.title}" style="width: 100%; height: 380px; object-fit: cover;" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'empty-portrait-box\'></div>';">` : `<div class="empty-portrait-box"></div>`}
+                        ${s.img && s.img.trim() !== '' ? `<img src="${s.img}" alt="${s.title}" style="width: 100%; height: 460px; object-fit: cover;" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'empty-portrait-box\'></div>';">` : `<div class="empty-portrait-box"></div>`}
                         <div class="card-body">
                             <div>
                                 <h3>${s.title || 'Nama Studio'}</h3>
@@ -377,7 +379,7 @@
             document.getElementById('promoGrid').innerHTML = promosList.map(p => `
                 <div class="slide-item-promo">
                     <div class="card-item">
-                        ${p.img && p.img.trim() !== '' ? `<img src="${p.img}" alt="${p.title}" style="width: 100%; height: 380px; object-fit: cover;" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'empty-portrait-box\'></div>';">` : `<div class="empty-portrait-box"></div>`}
+                        ${p.img && p.img.trim() !== '' ? `<img src="${p.img}" alt="${p.title}" style="width: 100%; height: 460px; object-fit: cover;" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'empty-portrait-box\'></div>';">` : `<div class="empty-portrait-box"></div>`}
                         <div class="card-body">
                             <div>
                                 <span class="badge-tag">${p.badge || 'PROMO'}</span>
@@ -389,7 +391,7 @@
                 </div>
             `).join('');
 
-            // Render Videos (Mendukung Embed Otomatis untuk Link TikTok & Instagram)
+            // Render Videos (Support 9:16 penuh & Auto-pause video lain saat diputar)
             const videosList = (cms.videos && cms.videos.length > 0) ? cms.videos : defaultCMS.videos;
             document.getElementById('videoGrid').innerHTML = videosList.map(v => {
                 let mediaContent = `<div class="empty-portrait-video"></div>`;
@@ -400,27 +402,39 @@
                         let match = cleanUrl.match(/\/video\/(\d+)/);
                         let videoId = match ? match[1] : '';
                         if (videoId) {
-                            mediaContent = `<iframe src="https://www.tiktok.com/embed/v2/${videoId}?autoplay=1&muted=1" style="width: 100%; height: 420px; border: 2px solid #fbcfe8; border-radius: 24px;" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+                            mediaContent = `<iframe src="https://www.tiktok.com/embed/v2/${videoId}?autoplay=1&muted=1" style="width: 100%; height: 480px; border: 2px solid #fbcfe8; border-radius: 24px; object-fit: cover;" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
                         } else {
-                            mediaContent = `<iframe src="${cleanUrl}" style="width: 100%; height: 420px; border: 2px solid #fbcfe8; border-radius: 24px;" allow="autoplay" allowfullscreen></iframe>`;
+                            mediaContent = `<iframe src="${cleanUrl}" style="width: 100%; height: 480px; border: 2px solid #fbcfe8; border-radius: 24px;" allow="autoplay" allowfullscreen></iframe>`;
                         }
                     } else if (cleanUrl.includes('instagram.com')) {
                         let igEmbedUrl = cleanUrl.includes('/reel/') || cleanUrl.includes('/p/') ? cleanUrl.replace(/\/?$/, '') + '/embed/' : cleanUrl;
-                        mediaContent = `<iframe src="${igEmbedUrl}" style="width: 100%; height: 420px; border: 2px solid #fbcfe8; border-radius: 24px;" allow="autoplay" allowfullscreen></iframe>`;
-                    } else if (cleanUrl.endsWith('.mp4') || cleanUrl.startsWith('blob:') || cleanUrl.includes('supabase.co')) {
-                        mediaContent = `<video src="${cleanUrl}" autoplay muted playsinline loop controls style="width: 100%; height: 420px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8;"></video>`;
+                        mediaContent = `<iframe src="${igEmbedUrl}" style="width: 100%; height: 480px; border: 2px solid #fbcfe8; border-radius: 24px;" allow="autoplay" allowfullscreen></iframe>`;
+                    } else if (cleanUrl.endsWith('.mp4') || cleanUrl.startsWith('blob:') || cleanUrl.includes('supabase.co') || cleanUrl.includes('images/')) {
+                        mediaContent = `<video class="auto-pause-video" src="${cleanUrl}" muted playsinline loop controls style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8;"></video>`;
                     } else {
                         let thumbShow = v.thumb && v.thumb.trim() !== '' ? v.thumb : '';
-                        mediaContent = `<div style="position:relative; width:100%; height:420px; border-radius:24px; border:2px solid #fbcfe8; overflow:hidden; background:#111; display:flex; align-items:center; justify-content:center;">
+                        mediaContent = `<div style="position:relative; width:100%; height:480px; border-radius:24px; border:2px solid #fbcfe8; overflow:hidden; background:#111; display:flex; align-items:center; justify-content:center;">
                             ${thumbShow ? `<img src="${thumbShow}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0.7;">` : ''}
-                            <a href="${cleanUrl}" target="_blank" style="position:relative; z-index:2; background:var(--primary); color:#fff; padding:10px 20px; border-radius:50px; font-weight:700; text-decoration:none; box-shadow:0 4px 15px rgba(0,0,0,0.3); font-size:0.9rem;">▶ Tonton Video</a>
+                            <a href="${cleanUrl}" target="_blank" style="position:relative; z-index:2; background:var(--primary); color:#fff; padding:12px 24px; border-radius:50px; font-weight:700; text-decoration:none; box-shadow:0 4px 15px rgba(0,0,0,0.3); font-size:0.9rem;">▶ Tonton Video</a>
                         </div>`;
                     }
                 } else if (v.thumb && v.thumb.trim() !== '') {
-                    mediaContent = `<img src="${v.thumb}" alt="Video" style="width: 100%; height: 420px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8;" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'empty-portrait-video\'></div>';">`;
+                    mediaContent = `<img src="${v.thumb}" alt="Video" style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8;" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'empty-portrait-video\'></div>';">`;
                 }
                 return `<div class="slide-item-video">${mediaContent}</div>`;
             }).join('');
+
+            // Fungsi Auto-pause video lain saat salah satu diputar
+            setTimeout(() => {
+                const allVideos = document.querySelectorAll('.auto-pause-video');
+                allVideos.forEach(vid => {
+                    vid.addEventListener('play', () => {
+                        allVideos.forEach(otherVid => {
+                            if (otherVid !== vid) otherVid.pause();
+                        });
+                    });
+                });
+            }, 500);
 
             if (cms && cms.footer) {
                 document.getElementById('fBrand').textContent = cms.footer.brand;
