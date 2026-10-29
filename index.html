@@ -286,7 +286,7 @@
         const defaultCMS = {
             colors: { primary: '#ff1493', secondary: '#2b4c7e', bg: '#fff0f5', footer: '#18171d' },
             banners: {
-                home: { titleId: 'LANGSUNG CETAK BAWA PULANG', titleEn: 'INSTANT PRINT & TAKE IT HOME', subId: 'Photobox & Self-Photo Studio kekinian.', subEn: 'Trendy Photobox Studio.', imgUrl: 'images/hero-banner.jpg', aboutImgUrl: 'images/about-img.jpg' },
+                home: { titleId: 'LANGSUNG CETAK BAWA PULANG', titleEn: 'INSTANT PRINT & TAKE IT HOME', subId: 'Photobox & Self-Photo Studio kekinian.', subEn: 'Trendy Photobox Studio.', imgUrl: 'images/hero-banner.jpg' },
                 about: { imgUrl: 'images/about-img.jpg' }
             },
             titles: { 
@@ -301,11 +301,11 @@
                 { title: 'Booth Portable Series', desc: 'Gaya minimalis modern', img: '' }
             ],
             videos: [
-                { title: 'Video 1', url: '#', thumb: '' },
-                { title: 'Video 2', url: '#', thumb: '' },
-                { title: 'Video 3', url: '#', thumb: '' },
-                { title: 'Video 4', url: '#', thumb: '' },
-                { title: 'Video 5', url: '#', thumb: '' }
+                { title: 'Video 1', url: '' },
+                { title: 'Video 2', url: '' },
+                { title: 'Video 3', url: '' },
+                { title: 'Video 4', url: '' },
+                { title: 'Video 5', url: '' }
             ],
             promos: [
                 { title: 'Promo Pelajar & Mahasiswa', badge: 'HOT PROMO', desc: 'Diskon spesial KTM aktif!', img: '' },
@@ -341,10 +341,13 @@
                     document.getElementById('heroTitle').innerHTML = currentLang === 'en' ? (b.titleEn || b.titleId) : b.titleId;
                     document.getElementById('heroSub').textContent = currentLang === 'en' ? (b.subEn || b.subId) : b.subId;
                     if (b.imgUrl) document.getElementById('heroBannerBg').style.backgroundImage = `url('${b.imgUrl}')`;
-                    if (b.aboutImgUrl) document.getElementById('aboutImg').src = b.aboutImgUrl;
                 }
-                if (cms.banners.about && cms.banners.about.imgUrl) {
-                    document.getElementById('aboutImg').src = cms.banners.about.imgUrl;
+                // Sinkronisasi mutlak pembacaan foto About Story dari admin
+                if (cms.banners.about) {
+                    if (cms.banners.about.imgUrl) {
+                        const aboutImgEl = document.getElementById('aboutImg');
+                        if (aboutImgEl) aboutImgEl.src = cms.banners.about.imgUrl;
+                    }
                 }
             }
             if (cms.titles) {
@@ -389,34 +392,18 @@
                 </div>
             `).join('');
 
-            // Render Videos (Tombol Tonton Profesional 9:16 yang aman dari proteksi overload TikTok/IG)
+            // Render Videos (Pemutar file MP4 lokal 9:16 penuh, terkunci loop, auto-pause)
             const videosList = (cms.videos && cms.videos.length > 0) ? cms.videos : defaultCMS.videos;
             document.getElementById('videoGrid').innerHTML = videosList.map(v => {
                 let mediaContent = `<div class="empty-portrait-video"></div>`;
                 if (v.url && v.url !== '#' && v.url.trim() !== '') {
                     let cleanUrl = v.url.replace(/^#/, '').trim();
-                    
-                    if (cleanUrl.endsWith('.mp4') || cleanUrl.startsWith('blob:') || cleanUrl.includes('supabase.co') || cleanUrl.includes('images/')) {
-                        mediaContent = `<video class="auto-pause-video" src="${cleanUrl}" controls playsinline loop style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8; background:#000;"></video>`;
-                    } else {
-                        let thumbShow = v.thumb && v.thumb.trim() !== '' ? v.thumb : '';
-                        let badgePlatform = cleanUrl.includes('tiktok.com') ? 'TikTok' : (cleanUrl.includes('instagram.com') ? 'Instagram' : 'Video');
-                        mediaContent = `<div style="position:relative; width:100%; height:480px; border-radius:24px; border:2px solid #fbcfe8; overflow:hidden; background:#111; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
-                            ${thumbShow ? `<img src="${thumbShow}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0.65;">` : '<div style="position:absolute; inset:0; background:linear-gradient(135deg, #2b4c7e 0%, #ff1493 100%); opacity:0.8;"></div>'}
-                            <div style="position:relative; z-index:2; padding:20px; display:flex; flex-direction:column; align-items:center; gap:12px;">
-                                <div style="width:55px; height:55px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.4rem; box-shadow:0 6px 20px rgba(0,0,0,0.4);">▶</div>
-                                <span style="color:#fff; font-weight:700; font-size:1rem; text-shadow:0 2px 8px rgba(0,0,0,0.8);">Tonton di ${badgePlatform}</span>
-                                <a href="${cleanUrl}" target="_blank" style="background:#fff; color:var(--secondary); padding:8px 22px; border-radius:50px; font-weight:800; font-size:0.85rem; text-decoration:none; box-shadow:0 4px 15px rgba(0,0,0,0.3); transition:0.2s;">Buka Tautan →</a>
-                            </div>
-                        </div>`;
-                    }
-                } else if (v.thumb && v.thumb.trim() !== '') {
-                    mediaContent = `<img src="${v.thumb}" alt="Video" style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8;" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'empty-portrait-video\'></div>';">`;
+                    mediaContent = `<video class="auto-pause-video" src="${cleanUrl}" controls playsinline loop style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8; background:#000;"></video>`;
                 }
                 return `<div class="slide-item-video">${mediaContent}</div>`;
             }).join('');
 
-            // Fungsi Auto-pause video .mp4 lain saat salah satu diputar
+            // Fungsi Auto-pause video MP4 lain saat salah satu diputar
             setTimeout(() => {
                 const allVideos = document.querySelectorAll('.auto-pause-video');
                 allVideos.forEach(vid => {
