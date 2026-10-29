@@ -343,10 +343,8 @@
                     if (b.imgUrl) document.getElementById('heroBannerBg').style.backgroundImage = `url('${b.imgUrl}')`;
                     if (b.aboutImgUrl) document.getElementById('aboutImg').src = b.aboutImgUrl;
                 }
-                if (cms.banners.about) {
-                    if (cms.banners.about.imgUrl) {
-                        document.getElementById('aboutImg').src = cms.banners.about.imgUrl;
-                    }
+                if (cms.banners.about && cms.banners.about.imgUrl) {
+                    document.getElementById('aboutImg').src = cms.banners.about.imgUrl;
                 }
             }
             if (cms.titles) {
@@ -391,31 +389,25 @@
                 </div>
             `).join('');
 
-            // Render Videos (Support 9:16 penuh & Auto-pause video lain saat diputar)
+            // Render Videos (Tombol Tonton Profesional 9:16 yang aman dari proteksi overload TikTok/IG)
             const videosList = (cms.videos && cms.videos.length > 0) ? cms.videos : defaultCMS.videos;
             document.getElementById('videoGrid').innerHTML = videosList.map(v => {
                 let mediaContent = `<div class="empty-portrait-video"></div>`;
                 if (v.url && v.url !== '#' && v.url.trim() !== '') {
                     let cleanUrl = v.url.replace(/^#/, '').trim();
                     
-                    if (cleanUrl.includes('tiktok.com')) {
-                        let match = cleanUrl.match(/\/video\/(\d+)/);
-                        let videoId = match ? match[1] : '';
-                        if (videoId) {
-                            mediaContent = `<iframe src="https://www.tiktok.com/embed/v2/${videoId}?autoplay=1&muted=1" style="width: 100%; height: 480px; border: 2px solid #fbcfe8; border-radius: 24px; object-fit: cover;" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
-                        } else {
-                            mediaContent = `<iframe src="${cleanUrl}" style="width: 100%; height: 480px; border: 2px solid #fbcfe8; border-radius: 24px;" allow="autoplay" allowfullscreen></iframe>`;
-                        }
-                    } else if (cleanUrl.includes('instagram.com')) {
-                        let igEmbedUrl = cleanUrl.includes('/reel/') || cleanUrl.includes('/p/') ? cleanUrl.replace(/\/?$/, '') + '/embed/' : cleanUrl;
-                        mediaContent = `<iframe src="${igEmbedUrl}" style="width: 100%; height: 480px; border: 2px solid #fbcfe8; border-radius: 24px;" allow="autoplay" allowfullscreen></iframe>`;
-                    } else if (cleanUrl.endsWith('.mp4') || cleanUrl.startsWith('blob:') || cleanUrl.includes('supabase.co') || cleanUrl.includes('images/')) {
-                        mediaContent = `<video class="auto-pause-video" src="${cleanUrl}" muted playsinline loop controls style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8;"></video>`;
+                    if (cleanUrl.endsWith('.mp4') || cleanUrl.startsWith('blob:') || cleanUrl.includes('supabase.co') || cleanUrl.includes('images/')) {
+                        mediaContent = `<video class="auto-pause-video" src="${cleanUrl}" controls playsinline loop style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8; background:#000;"></video>`;
                     } else {
                         let thumbShow = v.thumb && v.thumb.trim() !== '' ? v.thumb : '';
-                        mediaContent = `<div style="position:relative; width:100%; height:480px; border-radius:24px; border:2px solid #fbcfe8; overflow:hidden; background:#111; display:flex; align-items:center; justify-content:center;">
-                            ${thumbShow ? `<img src="${thumbShow}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0.7;">` : ''}
-                            <a href="${cleanUrl}" target="_blank" style="position:relative; z-index:2; background:var(--primary); color:#fff; padding:12px 24px; border-radius:50px; font-weight:700; text-decoration:none; box-shadow:0 4px 15px rgba(0,0,0,0.3); font-size:0.9rem;">▶ Tonton Video</a>
+                        let badgePlatform = cleanUrl.includes('tiktok.com') ? 'TikTok' : (cleanUrl.includes('instagram.com') ? 'Instagram' : 'Video');
+                        mediaContent = `<div style="position:relative; width:100%; height:480px; border-radius:24px; border:2px solid #fbcfe8; overflow:hidden; background:#111; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+                            ${thumbShow ? `<img src="${thumbShow}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0.65;">` : '<div style="position:absolute; inset:0; background:linear-gradient(135deg, #2b4c7e 0%, #ff1493 100%); opacity:0.8;"></div>'}
+                            <div style="position:relative; z-index:2; padding:20px; display:flex; flex-direction:column; align-items:center; gap:12px;">
+                                <div style="width:55px; height:55px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.4rem; box-shadow:0 6px 20px rgba(0,0,0,0.4);">▶</div>
+                                <span style="color:#fff; font-weight:700; font-size:1rem; text-shadow:0 2px 8px rgba(0,0,0,0.8);">Tonton di ${badgePlatform}</span>
+                                <a href="${cleanUrl}" target="_blank" style="background:#fff; color:var(--secondary); padding:8px 22px; border-radius:50px; font-weight:800; font-size:0.85rem; text-decoration:none; box-shadow:0 4px 15px rgba(0,0,0,0.3); transition:0.2s;">Buka Tautan →</a>
+                            </div>
                         </div>`;
                     }
                 } else if (v.thumb && v.thumb.trim() !== '') {
@@ -424,7 +416,7 @@
                 return `<div class="slide-item-video">${mediaContent}</div>`;
             }).join('');
 
-            // Fungsi Auto-pause video lain saat salah satu diputar
+            // Fungsi Auto-pause video .mp4 lain saat salah satu diputar
             setTimeout(() => {
                 const allVideos = document.querySelectorAll('.auto-pause-video');
                 allVideos.forEach(vid => {
