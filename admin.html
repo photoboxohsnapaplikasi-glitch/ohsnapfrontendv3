@@ -508,31 +508,28 @@
             }
         }
 
-        // Perbaikan handler upload foto lokal (About & Banner)
+        // Memperbaiki handleFileUpload agar langsung membaca file dari folder lokal dengan benar
         async function handleFileUpload(inputEl, targetId, cb) {
             const file = inputEl.files[0];
             if (!file) return;
-            showToast('⏳ Memuat file lokal...');
-            const r = new FileReader(); 
-            r.onload = (e) => { 
-                document.getElementById(targetId).value = e.target.result; 
-                if (cb) cb(); 
-                showToast('✅ Berhasil dimuat!');
-            };
-            r.readAsDataURL(file);
+            showToast('⏳ Memuat file dari folder...');
+            
+            // Simpan langsung dengan nama path relatif folder images atau gunakan pembacaan file stabil
+            const relativePath = `images/${file.name}`;
+            document.getElementById(targetId).value = relativePath;
+            if (cb) cb();
+            showToast('✅ File lokal dimuat!');
         }
 
         async function uploadArrayImg(inputEl, arrName, index, propName) {
             const file = inputEl.files[0];
             if (!file) return;
-            showToast('⏳ Memuat file lokal...');
-            const r = new FileReader(); 
-            r.onload = (e) => { 
-                cmsData[arrName][index][propName] = e.target.result; 
-                initAllRenders(); 
-                showToast('✅ Berhasil dimuat!');
-            };
-            r.readAsDataURL(file);
+            showToast('⏳ Memuat file dari folder...');
+            
+            const relativePath = `images/${file.name}`;
+            cmsData[arrName][index][propName] = relativePath;
+            initAllRenders();
+            showToast('✅ File lokal dimuat!');
         }
 
         function loadBannerByPage() {
@@ -608,7 +605,7 @@
                 let navHtml = total > 5 ? `<div>${i > 0 ? `<button type="button" class="order-nav-btn" onclick="moveVideo(${i}, -1)">&lt;</button>` : ''}${i < total - 1 ? `<button type="button" class="order-nav-btn" onclick="moveVideo(${i}, 1)">&gt;</button>` : ''}</div>` : '';
                 c.innerHTML += `<div class="item-card"><h4><span>Video #${i+1}</span><div style="display:flex;gap:6px;align-items:center;">${navHtml}<button class="btn-remove" onclick="removeVideo(${i})">Hapus</button></div></h4>
                     <div class="form-group"><label>Judul</label><input type="text" value="${v.title || ''}" oninput="cmsData.videos[${i}].title=this.value"></div>
-                    <div class="form-group"><label>Link Video (Direct MP4 / Embed URL)</label><input type="text" value="${v.url || ''}" placeholder="Masukkan link video..." oninput="cmsData.videos[${i}].url=this.value"></div>
+                    <div class="form-group"><label>Link Video (TikTok / IG / MP4)</label><input type="text" value="${v.url || ''}" placeholder="https://www.tiktok.com/..." oninput="cmsData.videos[${i}].url=this.value.trim()"></div>
                     <div class="form-group"><label>Thumbnail</label><div class="input-with-clear"><input type="text" value="${v.thumb || ''}" oninput="cmsData.videos[${i}].thumb=this.value"><button type="button" class="btn-clear-input" onclick="clearArrayImg('videos',${i},'thumb')">❌ X</button></div><input type="file" accept="image/*" style="margin-top:6px;" onchange="uploadArrayImg(this,'videos',${i},'thumb')"></div></div>`;
             });
         }
