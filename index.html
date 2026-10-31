@@ -277,6 +277,28 @@
     <script>
         const API_URL = 'http://localhost:3000/api';
         let currentLang = localStorage.getItem('siteLang') || 'id';
+
+        // Membaca file video MP4 dari IndexedDB browser
+        function getBlobFromIDB(key) {
+            return new Promise((resolve) => {
+                const req = indexedDB.open('ohsnap_media_db', 1);
+                req.onupgradeneeded = function(e) {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('media')) {
+                        db.createObjectStore('media');
+                    }
+                };
+                req.onsuccess = function(e) {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('media')) return resolve(null);
+                    const tx = db.transaction('media', 'readonly');
+                    const getReq = tx.objectStore('media').get(key);
+                    getReq.onsuccess = () => resolve(getReq.result || null);
+                    getReq.onerror = () => resolve(null);
+                };
+                req.onerror = () => resolve(null);
+            });
+        }
         
         const defaultCMS = {
             colors: { primary: '#ff1493', secondary: '#2b4c7e', bg: '#fff0f5', footer: '#18171d' },
@@ -341,7 +363,9 @@
                     const b = cms.banners.home;
                     document.getElementById('heroTitle').innerHTML = currentLang === 'en' ? (b.titleEn || b.titleId) : b.titleId;
                     document.getElementById('heroSub').textContent = currentLang === 'en' ? (b.subEn || b.subId) : b.subId;
-                    if (b.imgUrl) document.getElementById('heroBannerBg').style.backgroundImage = `url('${b.imgUrl}')`;
+                    if (b.imgUrl && b.imgUrl.trim() !== '') {
+                        document.getElementById('heroBannerBg').style.backgroundImage = `url("${b.imgUrl}")`;
+                    }
                 }
                 if (cms.banners.about) {
                     const ab = cms.banners.about;
@@ -413,13 +437,16 @@
                 </div>
             `).join('');
 
-            // Render Videos
+            // Render Videos (Mendukung video MP4 dari IndexedDB, URL MP4, dan link TikTok/Instagram)
             const videosList = (cms.videos && cms.videos.length > 0) ? cms.videos : defaultCMS.videos;
             document.getElementById('videoGrid').innerHTML = videosList.map(v => {
                 let mediaContent = `<div class="empty-portrait-video"></div>`;
                 if (v.url && v.url !== '#' && v.url.trim() !== '') {
                     let cleanUrl = v.url.replace(/^#/, '').trim();
-                    if (cleanUrl.endsWith('.mp4') || cleanUrl.startsWith('blob:') || cleanUrl.includes('supabase.co') || cleanUrl.includes('images/')) {
+                    if (cleanUrl.startsWith('idb://')) {
+                        const idbKey = cleanUrl.replace('idb://', '');
+                        mediaContent = `<video class="auto-pause-video" data-idb-key="${idbKey}" controls playsinline loop style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8; background:#000;"></video>`;
+                    } else if (cleanUrl.endsWith('.mp4') || cleanUrl.startsWith('blob:') || cleanUrl.startsWith('data:video') || cleanUrl.includes('supabase.co') || cleanUrl.includes('images/')) {
                         mediaContent = `<video class="auto-pause-video" src="${cleanUrl}" controls playsinline loop style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8; background:#000;"></video>`;
                     } else if (cleanUrl.includes('tiktok.com') || cleanUrl.includes('instagram.com')) {
                         let platformName = cleanUrl.includes('tiktok.com') ? 'TikTok' : 'Instagram';
@@ -438,8 +465,17 @@
                 return `<div class="slide-item-video">${mediaContent}</div>`;
             }).join('');
 
-            // Fungsi Auto-pause video MP4 lain saat salah satu diputar
-            setTimeout(() => {
+            // Muat file video MP4 dari IndexedDB & pasang event Auto-Pause
+            setTimeout(async () => {
+                const idbVideos = document.querySelectorAll('video[data-idb-key]');
+                for (const vidEl of idbVideos) {
+                    const key = vidEl.getAttribute('data-idb-key');
+                    const blob = await getBlobFromIDB(key);
+                    if (blob) {
+                        vidEl.src = URL.createObjectURL(blob);
+                    }
+                }
+
                 const allVideos = document.querySelectorAll('.auto-pause-video');
                 allVideos.forEach(vid => {
                     vid.addEventListener('play', () => {
@@ -448,7 +484,7 @@
                         });
                     });
                 });
-            }, 500);
+            }, 200);
 
             if (cms && cms.footer) {
                 document.getElementById('fBrand').textContent = cms.footer.brand;
