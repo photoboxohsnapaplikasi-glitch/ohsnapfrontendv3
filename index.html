@@ -206,7 +206,7 @@
                 <a href="story.html" class="btn-readmore" id="aboutBtn">Read more →</a>
             </div>
             <div class="about-img-box">
-                <img id="aboutImg" src="images/about-img.jpg" alt="Our Story Photo" onerror="this.style.opacity='0'">
+                <img id="aboutImg" alt="Our Story Photo" style="display:block;" onerror="this.style.opacity='0'">
             </div>
         </div>
     </section>
@@ -278,10 +278,9 @@
         const API_URL = 'http://localhost:3000/api';
         let currentLang = localStorage.getItem('siteLang') || 'id';
 
-        // Membaca file video MP4 dari IndexedDB browser
-        function getBlobFromIDB(key) {
+        function getMediaFromIDB(key) {
             return new Promise((resolve) => {
-                const req = indexedDB.open('ohsnap_media_db', 1);
+                const req = indexedDB.open('ohsnap_media_db', 2);
                 req.onupgradeneeded = function(e) {
                     const db = e.target.result;
                     if (!db.objectStoreNames.contains('media')) {
@@ -409,7 +408,7 @@
             document.getElementById('studioGrid').innerHTML = studiosList.map(s => `
                 <div class="slide-item-studio">
                     <div class="card-item">
-                        ${s.img && s.img.trim() !== '' ? `<img src="${s.img}" alt="${s.title}" style="width: 100%; height: 460px; object-fit: cover;" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'empty-portrait-box\'></div>';">` : `<div class="empty-portrait-box"></div>`}
+                        ${s.img && s.img.trim() !== '' ? `<div style="width:100%; height:460px; overflow:hidden; background:#fff;"><img src="${s.img}" alt="${s.title}" style="width: 100%; height: 460px; object-fit: cover; display:block;" onerror="this.style.display='none'"></div>` : `<div class="empty-portrait-box"></div>`}
                         <div class="card-body">
                             <div>
                                 <h3>${s.title || 'Nama Studio'}</h3>
@@ -425,7 +424,7 @@
             document.getElementById('promoGrid').innerHTML = promosList.map(p => `
                 <div class="slide-item-promo">
                     <div class="card-item">
-                        ${p.img && p.img.trim() !== '' ? `<img src="${p.img}" alt="${p.title}" style="width: 100%; height: 460px; object-fit: cover;" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'empty-portrait-box\'></div>';">` : `<div class="empty-portrait-box"></div>`}
+                        ${p.img && p.img.trim() !== '' ? `<div style="width:100%; height:460px; overflow:hidden; background:#fff;"><img src="${p.img}" alt="${p.title}" style="width: 100%; height: 460px; object-fit: cover; display:block;" onerror="this.style.display='none'"></div>` : `<div class="empty-portrait-box"></div>`}
                         <div class="card-body">
                             <div>
                                 <span class="badge-tag">${p.badge || 'PROMO'}</span>
@@ -437,11 +436,11 @@
                 </div>
             `).join('');
 
-            // Render Videos (Mendukung video MP4 dari IndexedDB, URL MP4, dan link TikTok/Instagram)
+            // Render Videos
             const videosList = (cms.videos && cms.videos.length > 0) ? cms.videos : defaultCMS.videos;
             document.getElementById('videoGrid').innerHTML = videosList.map(v => {
                 let mediaContent = `<div class="empty-portrait-video"></div>`;
-                if (v.url && v.url !== '#' && v.url.trim() !== '') {
+                if (v.url && v.url !== '#' && v.url.trim() !== '' && !v.url.startsWith('[')) {
                     let cleanUrl = v.url.replace(/^#/, '').trim();
                     if (cleanUrl.startsWith('idb://')) {
                         const idbKey = cleanUrl.replace('idb://', '');
@@ -465,14 +464,16 @@
                 return `<div class="slide-item-video">${mediaContent}</div>`;
             }).join('');
 
-            // Muat file video MP4 dari IndexedDB & pasang event Auto-Pause
+            // Muat file video MP4 dari ArrayBuffer IndexedDB & pasang Auto-Pause
             setTimeout(async () => {
                 const idbVideos = document.querySelectorAll('video[data-idb-key]');
                 for (const vidEl of idbVideos) {
                     const key = vidEl.getAttribute('data-idb-key');
-                    const blob = await getBlobFromIDB(key);
-                    if (blob) {
+                    const record = await getMediaFromIDB(key);
+                    if (record) {
+                        const blob = (record instanceof Blob) ? record : new Blob([record.buffer], { type: record.type || 'video/mp4' });
                         vidEl.src = URL.createObjectURL(blob);
+                        vidEl.load();
                     }
                 }
 
@@ -484,7 +485,7 @@
                         });
                     });
                 });
-            }, 200);
+            }, 150);
 
             if (cms && cms.footer) {
                 document.getElementById('fBrand').textContent = cms.footer.brand;
@@ -508,19 +509,24 @@
             applyCMS();
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
+        async function syncLatestCMS() {
             const localSaved = localStorage.getItem('ohsnap_cms_data');
             if (localSaved) {
-                cms = JSON.parse(localSaved);
-            } else {
-                try {
-                    const res = await fetch(`${API_URL}/cms`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data) { cms = data; localStorage.setItem('ohsnap_cms_data', JSON.stringify(cms)); }
-                    }
-                } catch (e) {}
+                try { cms = JSON.parse(localSaved); } catch (e) {}
             }
+            const idbBackup = await getMediaFromIDB('cms_full_backup');
+            if (idbBackup && (!cms.lastUpdated || (idbBackup.lastUpdated && idbBackup.lastUpdated >= cms.lastUpdated))) {
+                cms = idbBackup;
+            }
+            applyCMS();
+        }
+
+        // Otomatis perbarui tampilan saat berpindah dari tab Admin ke tab Frontend
+        window.addEventListener('storage', () => { syncLatestCMS(); });
+        window.addEventListener('focus', () => { syncLatestCMS(); });
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await syncLatestCMS();
             setLanguage(currentLang);
         });
     </script>
