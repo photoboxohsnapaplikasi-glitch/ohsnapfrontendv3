@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Admin - OH SNAP! Photobox</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Load Supabase JS Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary: #ff1493;
@@ -409,7 +411,11 @@
             }
         })();
 
-        const API_URL = 'http://localhost:3000/api';
+        // Konfigurasi Supabase
+        const SUPABASE_URL = 'https://nwmvjmhrqwrvnlypdjxe.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_JeGNoytBoJBCQ6Xqwe_PQA_hILpX8IK';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyum2HVg2InZDhEyeata3I2hTbPUQzzqyKHsEtgA9Z3vRCF2CeTjwzGTCHd4tszlOMm/exec';
 
         function openMediaDB() {
@@ -526,7 +532,9 @@
             titles: { 
                 titlePromoId: 'Promo <span>Spesial</span> Bulan Ini', subPromoId: 'Jangan lewatkan penawaran menarik di berbagai cabang OH SNAP! Photobox', 
                 titleStudioId: 'Suasana <span>Studio & Booth</span>', subStudioId: 'Intip keseruan dan estetika bilik tematik kami di berbagai kota', 
-                titleVideoId: 'Keseruan Sobat <span>OH SNAP!</span>', subVideoId: 'Video feed momen seru pelanggan kami di bilik photobox'
+                titleVideoId: 'Keseruan Sobat <span>OH SNAP!</span>', subVideoId: 'Video feed momen seru pelanggan kami di bilik photobox',
+                titleLayanan: 'Pilihan Paket Layanan', subLayanan: 'Pilih paket photobox dan studio favoritmu',
+                titleFrameId: 'Koleksi Frame Eksklusif', subFrameId: 'Pilihan frame tematik untuk cetakan foto terbaikmu'
             },
             studios: [
                 { title: 'Booth Train Thematic', desc: 'Desain kabin kereta estetik', img: '' },
@@ -613,17 +621,7 @@
             return merged;
         }
 
-        function loadSavedCMS() {
-            try {
-                const raw = localStorage.getItem('ohsnap_cms_data');
-                if (!raw) return JSON.parse(JSON.stringify(defaultCMS));
-                return mergeWithDefault(JSON.parse(raw));
-            } catch (e) {
-                return JSON.parse(JSON.stringify(defaultCMS));
-            }
-        }
-
-        let cmsData = loadSavedCMS();
+        let cmsData = JSON.parse(JSON.stringify(defaultCMS));
         let activeBannerPageKey = sessionStorage.getItem('activeBannerPage') || 'home';
 
         function persistData() {
@@ -1173,9 +1171,9 @@
             persistData();
         }
 
-        function resetDefaultColors() { 
-            cmsData.colors = JSON.parse(JSON.stringify(defaultCMS.colors)); 
-            loadColors(); saveAllCMS(); showToast('🔄 Warna dikembalikan ke default!'); 
+        function resetDefaultColors() {  
+            cmsData.colors = JSON.parse(JSON.stringify(defaultCMS.colors));  
+            loadColors(); saveAllCMS(); showToast('🔄 Warna dikembalikan ke default!');  
         }
 
         let resendList = [];
@@ -1237,7 +1235,7 @@
         }
 
         function renderResendTable() {
-            const tb = document.getElementById('resendTableBody'); 
+            const tb = document.getElementById('resendTableBody');  
             tb.innerHTML = '';
              
             if (!resendList || resendList.length === 0) {
@@ -1401,17 +1399,28 @@
             }
         }
 
-        function saveAllCMS() {
+        // Fungsi Simpan ke Supabase (Sinkron antar PC)
+        async function saveAllCMS() {
             updateBannerState();
             updateTitlesState();
             updateFooterState();
             persistData();
-            fetch(`${API_URL}/cms`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(cmsData)
-            }).catch(() => {});
-            showToast('✅ Berhasil disimpan!');
+
+            try {
+                const { error } = await supabaseClient
+                    .from('cms_settings')
+                    .upsert({ id: 1, data: cmsData, updated_at: new Date() });
+
+                if (error) {
+                    console.error('Gagal simpan ke Supabase:', error);
+                    showToast('❌ Gagal sinkron ke database online');
+                } else {
+                    showToast('✅ Berhasil disimpan & disinkronkan!');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('✅ Berhasil disimpan secara lokal!');
+            }
         }
 
         window.addEventListener('beforeunload', () => {
@@ -1438,10 +1447,30 @@
             renderAdminTable();
         }
 
+        // Fungsi Muat Data dari Supabase saat halaman dibuka
         document.addEventListener('DOMContentLoaded', async () => {
-            const idbBackup = await getMediaFromIDB('cms_full_backup');
-            if (idbBackup && (!cmsData.lastUpdated || (idbBackup.lastUpdated && idbBackup.lastUpdated >= cmsData.lastUpdated))) {
-                cmsData = mergeWithDefault(idbBackup);
+            try {
+                const { data, error } = await supabaseClient
+                    .from('cms_settings')
+                    .select('data')
+                    .eq('id', 1)
+                    .single();
+
+                if (data && data.data) {
+                    cmsData = mergeWithDefault(data.data);
+                    saveCMSBackupToIDB(cmsData);
+                    try { localStorage.setItem('ohsnap_cms_data', JSON.stringify(cmsData)); } catch(e){}
+                } else {
+                    const idbBackup = await getMediaFromIDB('cms_full_backup');
+                    if (idbBackup && (!cmsData.lastUpdated || (idbBackup.lastUpdated && idbBackup.lastUpdated >= cmsData.lastUpdated))) {
+                        cmsData = mergeWithDefault(idbBackup);
+                    }
+                }
+            } catch (err) {
+                const idbBackup = await getMediaFromIDB('cms_full_backup');
+                if (idbBackup) {
+                    cmsData = mergeWithDefault(idbBackup);
+                }
             }
             initAllRenders();
             loadResendData();
