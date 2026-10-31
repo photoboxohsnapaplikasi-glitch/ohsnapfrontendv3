@@ -306,9 +306,9 @@
             <div id="locationListContainer" class="dynamic-list"></div>
         </section>
 
-        <!-- 8. FOOTER -->
+        <!-- 8. FOOTER (Mendukung Bilingual ID & EN) -->
         <section id="sec-footer" class="admin-section">
-            <div class="sec-header"><h2>Kelola Informasi Footer</h2></div>
+            <div class="sec-header"><h2>Kelola Informasi Footer (ID & EN)</h2></div>
             <div class="form-grid">
                 <div class="form-group"><label>Nama Grup Perusahaan</label><input type="text" id="footerBrand" oninput="updateFooterState()"></div>
                 <div class="form-group"><label>Daftar Cabang</label><textarea id="footerBranches" oninput="updateFooterState()"></textarea></div>
@@ -316,6 +316,10 @@
                 <div class="form-group"><label>IG URL</label><input type="text" id="footerIgUrl" oninput="updateFooterState()"></div>
                 <div class="form-group"><label>TikTok Name</label><input type="text" id="footerTtName" oninput="updateFooterState()"></div>
                 <div class="form-group"><label>TikTok URL</label><input type="text" id="footerTtUrl" oninput="updateFooterState()"></div>
+                <div class="form-group"><label>Judul Kartu Lokasi (ID)</label><input type="text" id="footerCardTitleId" oninput="updateFooterState()"></div>
+                <div class="form-group"><label>Judul Kartu Lokasi (EN)</label><input type="text" id="footerCardTitleEn" oninput="updateFooterState()"></div>
+                <div class="form-group"><label>Deskripsi Kartu Lokasi (ID)</label><textarea id="footerCardDescId" oninput="updateFooterState()"></textarea></div>
+                <div class="form-group"><label>Deskripsi Kartu Lokasi (EN)</label><textarea id="footerCardDescEn" oninput="updateFooterState()"></textarea></div>
                 <div class="form-group"><label>Copyright</label><input type="text" id="footerCopyright" oninput="updateFooterState()"></div>
             </div>
         </section>
@@ -326,7 +330,7 @@
             <div class="form-grid">
                 <div class="color-picker-box"><input type="color" id="pickerPrimary" class="color-wheel" oninput="syncColor('Primary', this.value)"><div style="flex:1;"><label>Warna Utama</label><input type="text" id="hexPrimary" oninput="syncColor('Primary', this.value)"></div></div>
                 <div class="color-picker-box"><input type="color" id="pickerSecondary" class="color-wheel" oninput="syncColor('Secondary', this.value)"><div style="flex:1;"><label>Warna Teks</label><input type="text" id="hexSecondary" oninput="syncColor('Secondary', this.value)"></div></div>
-                <div class="color-picker-box"><input type="color" id="pickerBg" class="color-wheel" oninput="syncColor('Bg', this.value)"><div style="flex:1;"><label>Warna Background</label><input type="text" id="hexBg" oninput="syncColor('Bg', this.value)"></div></div>
+                <div class="color-picker-box"><input type="color" id="pickerBg" class="color-wheel" oninput="syncColor('Bg', this.value)"><div style="flex:1;"><label>Warna Background</label><input type="text" id="hexBg" oninput="syncColor('HexBg', this.value)"></div></div>
                 <div class="color-picker-box"><input type="color" id="pickerFooter" class="color-wheel" oninput="syncColor('Footer', this.value)"><div style="flex:1;"><label>Warna Footer</label><input type="text" id="hexFooter" oninput="syncColor('Footer', this.value)"></div></div>
             </div>
         </section>
@@ -416,7 +420,6 @@
         const API_URL = 'http://localhost:3000/api';
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyum2HVg2InZDhEyeata3I2hTbPUQzzqyKHsEtgA9Z3vRCF2CeTjwzGTCHd4tszlOMm/exec';
 
-        // Database IndexedDB berkapasitas besar untuk menyimpan Video MP4 (ArrayBuffer) & Backup CMS penuh
         function openMediaDB() {
             return new Promise((resolve, reject) => {
                 const req = indexedDB.open('ohsnap_media_db', 2);
@@ -477,7 +480,6 @@
             } catch (e) {}
         }
 
-        // Kompresi gambar proporsional (membatasi lebar DAN tinggi maksimal 650px agar ringan & muat banyak di localStorage)
         function compressImageFile(file, maxDim = 650, quality = 0.62) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -579,13 +581,26 @@
                 igName: '@ohsnap_photobox', 
                 igUrl: 'https://instagram.com/ohsnap_photobox', 
                 ttName: '@ohsnap_photobox', 
-                ttUrl: 'https://tiktok.com/@ohsnap_photobox', 
+                ttUrl: 'https://tiktok.com/@ohsnap_photobox',
+                cardTitleId: 'Find nearby OH SNAP! Studio',
+                cardTitleEn: 'Find nearby OH SNAP! Studio',
+                cardDescId: 'Temukan booth dan studio terdekat di kotamu untuk abadikan momen serumu hari ini!',
+                cardDescEn: 'Find the nearest booth and studio in your city to capture your special moments today!',
                 copyright: '© 2026 OH SNAP! Photobox. All rights reserved.' 
             },
             admins: [
                 { id: 1, name: 'Super Admin', username: 'admin', pass: 'ohsnap' }
             ]
         };
+
+        function sanitizeVideosList(videos) {
+            if (!Array.isArray(videos)) return defaultCMS.videos;
+            return videos.map(v => {
+                let u = (v && v.url) ? String(v.url).trim() : '';
+                if (u === '#' || u === 'images/video-1.mp4') u = '';
+                return Object.assign({}, v, { url: u });
+            });
+        }
 
         function mergeWithDefault(parsed) {
             const merged = JSON.parse(JSON.stringify(defaultCMS));
@@ -598,7 +613,7 @@
             }
             if (parsed.titles) Object.assign(merged.titles, parsed.titles);
             if (Array.isArray(parsed.studios) && parsed.studios.length > 0) merged.studios = parsed.studios;
-            if (Array.isArray(parsed.videos) && parsed.videos.length > 0) merged.videos = parsed.videos;
+            if (Array.isArray(parsed.videos) && parsed.videos.length > 0) merged.videos = sanitizeVideosList(parsed.videos);
             if (Array.isArray(parsed.promos) && parsed.promos.length > 0) merged.promos = parsed.promos;
             if (Array.isArray(parsed.frames) && parsed.frames.length > 0) merged.frames = parsed.frames;
             if (Array.isArray(parsed.services) && parsed.services.length > 0) merged.services = parsed.services;
@@ -626,9 +641,7 @@
             saveCMSBackupToIDB(cmsData);
             try {
                 localStorage.setItem('ohsnap_cms_data', JSON.stringify(cmsData));
-            } catch (e) {
-                console.warn('Disimpan ke IndexedDB penuh karena localStorage penuh.');
-            }
+            } catch (e) {}
         }
 
         function toggleMobileSidebar() { document.getElementById('sidebarEl').classList.toggle('active'); }
@@ -743,7 +756,6 @@
             }
         }
 
-        // Upload Gambar Banner sesuai dropdown halaman aktif
         async function handleFileUpload(inputEl) {
             const file = inputEl.files[0];
             if (!file) return;
@@ -766,7 +778,6 @@
             }
         }
 
-        // Upload Khusus Foto About Our Story
         async function handleAboutPhotoUpload(inputEl) {
             const file = inputEl.files[0];
             if (!file) return;
@@ -790,7 +801,6 @@
             }
         }
 
-        // Upload Foto untuk Studio, Promo, Frame, Layanan, Lokasi
         async function uploadArrayImg(inputEl, arrName, index, propName) {
             const file = inputEl.files[0];
             if (!file) return;
@@ -807,7 +817,6 @@
             }
         }
 
-        // Upload File Video MP4 (Disimpan sebagai ArrayBuffer ke IndexedDB)
         async function uploadVideoFile(inputEl, arrName, index, propName) {
             const file = inputEl.files[0];
             if (!file) return;
@@ -984,7 +993,6 @@
                     <div class="form-group"><label>Link URL (IG/TikTok/MP4) atau Upload File MP4</label><div class="input-with-clear"><input type="text" value="${inputVal}" placeholder="${inputPlaceholder}" oninput="cmsData.videos[${i}].url=this.value.trim(); persistData();"><button type="button" class="btn-clear-input" onclick="clearArrayImg('videos',${i},'url')">❌ X</button></div><input type="file" accept="video/mp4,video/*" style="margin-top:6px;" onchange="uploadVideoFile(this,'videos',${i},'url')">${previewBadge}</div></div>`;
             });
 
-            // Muat preview video MP4 langsung di dalam kartu Admin
             setTimeout(async () => {
                 const adminVids = document.querySelectorAll('video[data-admin-idb]');
                 for (const vidEl of adminVids) {
@@ -1138,8 +1146,13 @@
             document.getElementById('footerIgUrl').value = f.igUrl !== undefined ? f.igUrl : '';
             document.getElementById('footerTtName').value = f.ttName !== undefined ? f.ttName : '';
             document.getElementById('footerTtUrl').value = f.ttUrl !== undefined ? f.ttUrl : '';
+            document.getElementById('footerCardTitleId').value = f.cardTitleId !== undefined ? f.cardTitleId : 'Find nearby OH SNAP! Studio';
+            document.getElementById('footerCardTitleEn').value = f.cardTitleEn !== undefined ? f.cardTitleEn : 'Find nearby OH SNAP! Studio';
+            document.getElementById('footerCardDescId').value = f.cardDescId !== undefined ? f.cardDescId : 'Temukan booth dan studio terdekat di kotamu untuk abadikan momen serumu hari ini!';
+            document.getElementById('footerCardDescEn').value = f.cardDescEn !== undefined ? f.cardDescEn : 'Find the nearest booth and studio in your city to capture your special moments today!';
             document.getElementById('footerCopyright').value = f.copyright !== undefined ? f.copyright : '';
         }
+
         function updateFooterState() {
             cmsData.footer = {
                 brand: document.getElementById('footerBrand').value,
@@ -1148,6 +1161,10 @@
                 igUrl: document.getElementById('footerIgUrl').value,
                 ttName: document.getElementById('footerTtName').value,
                 ttUrl: document.getElementById('footerTtUrl').value,
+                cardTitleId: document.getElementById('footerCardTitleId').value,
+                cardTitleEn: document.getElementById('footerCardTitleEn').value,
+                cardDescId: document.getElementById('footerCardDescId').value,
+                cardDescEn: document.getElementById('footerCardDescEn').value,
                 copyright: document.getElementById('footerCopyright').value
             };
             persistData();
@@ -1440,7 +1457,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
-            // Pulihkan dari backup IndexedDB jika ada data yang lebih baru
             const idbBackup = await getMediaFromIDB('cms_full_backup');
             if (idbBackup && (!cmsData.lastUpdated || (idbBackup.lastUpdated && idbBackup.lastUpdated >= cmsData.lastUpdated))) {
                 cmsData = mergeWithDefault(idbBackup);

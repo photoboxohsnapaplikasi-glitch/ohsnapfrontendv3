@@ -259,14 +259,14 @@
         <div class="footer-content">
             <div class="footer-left">
                 <h3 id="fBrand">OH SNAP! Photobox Group</h3>
-                <address><strong data-en="Branches:" data-id="Cabang:">Cabang:</strong> <span id="fBranches">Kediri Mall Lt.5, Plaza Cilacap Lt.3, Laksana Baru Lt.3, Plaza Pekalongan Lt.2, Yogya Pemalang Lt.3</span></address>
-                <p>Instagram: <a id="fIg" href="https://www.instagram.com/ohsnap_photobox" target="_blank">@ohsnap_photobox</a></p>
-                <p>TikTok: <a id="fTt" href="https://www.tiktok.com/@ohsnap_photobox" target="_blank">@ohsnap_photobox</a></p>
+                <address><strong data-en="Branches:" data-id="Cabang:">Cabang:</strong> <span id="fBranches">Kediri Mall Lt.5, Plaza Cilacap Lt.3</span></address>
+                <p>Instagram: <a id="fIg" href="#" target="_blank">@ohsnap_photobox</a></p>
+                <p>TikTok: <a id="fTt" href="#" target="_blank">@ohsnap_photobox</a></p>
                 <div class="footer-helpdesk">
-                    <h4>Helpdesk</h4>
+                    <h4 data-en="Helpdesk" data-id="Bantuan">Helpdesk</h4>
                     <ul>
-                        <li><a href="resend.html">Resend Softcopy</a></li>
-                        <li><a href="login.html">Login Admin</a></li>
+                        <li><a href="resend.html" data-en="Resend Softcopy" data-id="Kirim Ulang Softcopy">Resend Softcopy</a></li>
+                        <li><a href="login.html" data-en="Admin Login" data-id="Masuk Admin">Login Admin</a></li>
                     </ul>
                 </div>
             </div>
@@ -339,7 +339,19 @@
                 { title: 'Paket Bundling Extra Print', badge: 'BEST DEAL', desc: 'Cetak lebih banyak untuk geng.', img: '' },
                 { title: 'Weekend Flash Sale', badge: 'LIMITED', desc: 'Potongan harga khusus.', img: '' }
             ],
-            footer: { brand: 'OH SNAP! Photobox Group', branches: 'Kediri Mall Lt.5, Plaza Cilacap Lt.3', igName: '@ohsnap_photobox', igUrl: '#', ttName: '@ohsnap_photobox', ttUrl: '#', copyright: '© 2026 OH SNAP! Photobox. All rights reserved.' }
+            footer: { 
+                brand: 'OH SNAP! Photobox Group', 
+                branches: 'Kediri Mall Lt.5, Plaza Cilacap Lt.3', 
+                igName: '@ohsnap_photobox', 
+                igUrl: '#', 
+                ttName: '@ohsnap_photobox', 
+                ttUrl: '#', 
+                cardTitleId: 'Find nearby OH SNAP! Studio',
+                cardTitleEn: 'Find nearby OH SNAP! Studio',
+                cardDescId: 'Temukan booth dan studio terdekat di kotamu untuk abadikan momen serumu hari ini!',
+                cardDescEn: 'Find the nearest booth and studio in your city to capture your special moments today!',
+                copyright: '© 2026 OH SNAP! Photobox. All rights reserved.' 
+            }
         };
 
         let cms = JSON.parse(localStorage.getItem('ohsnap_cms_data')) || defaultCMS;
@@ -452,18 +464,16 @@
                 </div>
             `).join('');
 
-            // Render Videos (Hanya merender video yang benar-benar valid; jika kosong/gagal dimuat otomatis menjadi kotak putih bersih)
+            // Render Videos
             const videosList = (cms.videos && cms.videos.length > 0) ? cms.videos : defaultCMS.videos;
             document.getElementById('videoGrid').innerHTML = videosList.map(v => {
                 let mediaContent = `<div class="empty-portrait-video"></div>`;
                 let rawUrl = (v && v.url) ? String(v.url).trim() : '';
 
-                // Abaikan nilai placeholder lama seperti '#' atau 'images/video-1.mp4'
                 if (rawUrl !== '' && rawUrl !== '#' && rawUrl !== 'images/video-1.mp4' && !rawUrl.startsWith('[')) {
                     let cleanUrl = rawUrl.replace(/^#/, '').trim();
                     if (cleanUrl.startsWith('idb://')) {
                         const idbKey = cleanUrl.replace('idb://', '');
-                        // Tampilkan kotak putih dulu sampai terbukti ada file video di IndexedDB
                         mediaContent = `<div class="empty-portrait-video" data-idb-slot="${idbKey}"></div>`;
                     } else if (cleanUrl.includes('tiktok.com') || cleanUrl.includes('instagram.com')) {
                         let platformName = cleanUrl.includes('tiktok.com') ? 'TikTok' : 'Instagram';
@@ -482,7 +492,6 @@
                 return `<div class="slide-item-video">${mediaContent}</div>`;
             }).join('');
 
-            // Muat file video MP4 dari IndexedDB hanya untuk slot yang memiliki data valid
             setTimeout(async () => {
                 const idbSlots = document.querySelectorAll('[data-idb-slot]');
                 for (const slotEl of idbSlots) {
@@ -495,15 +504,16 @@
                     }
                 }
                 attachAutoPauseListeners();
-            }, 100);
+            }, 150);
 
             if (cms && cms.footer) {
                 document.getElementById('fBrand').textContent = cms.footer.brand;
                 document.getElementById('fBranches').textContent = cms.footer.branches;
                 const ig = document.getElementById('fIg'); if(ig) { ig.textContent = cms.footer.igName; ig.href = cms.footer.igUrl || '#'; }
                 const tt = document.getElementById('fTt'); if(tt) { tt.textContent = cms.footer.ttName; tt.href = cms.footer.ttUrl || '#'; }
-                document.getElementById('fCardTitle').textContent = cms.footer.cardTitle || 'Find nearby OH SNAP! Studio';
-                document.getElementById('fCardDesc').textContent = cms.footer.cardDesc || 'Temukan booth dan studio terdekat di kotamu untuk abadikan momen serumu hari ini!';
+                
+                document.getElementById('fCardTitle').textContent = currentLang === 'en' ? (cms.footer.cardTitleEn || 'Find nearby OH SNAP! Studio') : (cms.footer.cardTitleId || 'Find nearby OH SNAP! Studio');
+                document.getElementById('fCardDesc').textContent = currentLang === 'en' ? (cms.footer.cardDescEn || 'Find the nearest booth and studio in your city to capture your special moments today!') : (cms.footer.cardDescId || 'Temukan booth dan studio terdekat di kotamu untuk abadikan momen serumu hari ini!');
                 document.getElementById('fCopy').textContent = cms.footer.copyright;
             }
         }
