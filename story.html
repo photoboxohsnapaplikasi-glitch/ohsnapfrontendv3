@@ -27,9 +27,13 @@
 
         .story-container { max-width: 900px; margin: 60px auto; padding: 0 6%; }
         .story-card { background: #fff; border: 1px solid #fbcfe8; border-radius: 24px; padding: 45px; box-shadow: 0 10px 30px rgba(255,182,193,0.2); }
+        
+        .story-img-box { width: 100%; height: 380px; border-radius: 18px; overflow: hidden; margin-bottom: 30px; border: 2px solid #fbcfe8; background: #fff; }
+        .story-img-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
         .story-card h1 { font-size: 2.3rem; font-weight: 800; margin-bottom: 20px; text-align: center; color: var(--secondary); }
         .story-card h1 span { color: var(--primary); }
-        .story-card p { font-size: 1.02rem; color: #4b5563; margin-bottom: 18px; text-align: justify; }
+        .story-card .story-content { font-size: 1.02rem; color: #4b5563; margin-bottom: 18px; text-align: justify; white-space: pre-line; line-height: 1.8; }
 
         footer { background-color: var(--footer-bg); color: #b5b5bc; padding: 60px 8% 30px; border-top: 2px solid #fbcfe8; margin-top: 60px; }
         .footer-content { max-width: 1300px; margin: 0 auto; display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; align-items: center; }
@@ -50,6 +54,9 @@
             .nav-menu a { color: var(--secondary); padding: 14px 0; border-bottom: 1px solid #f3f4f6; width: 100%; }
             .lang-switcher { width: 100%; background: #fdf2f8; }
             .lang-btn { color: var(--secondary); width: 50%; }
+            .story-card { padding: 25px; }
+            .story-card h1 { font-size: 1.8rem; }
+            .story-img-box { height: 240px; }
             .footer-content { grid-template-columns: 1fr; }
         }
     </style>
@@ -79,16 +86,13 @@
 
     <div class="story-container">
         <div class="story-card">
-            <h1 data-en="OUR <span>STORY</span>" data-id="CERITA <span>KAMI</span>">CERITA <span>KAMI</span></h1>
-            <p data-en="OH SNAP! Photobox was born from the spirit of capturing warm, spontaneous, and unforgettable moments with your favorite people. Starting with thematic booths designed creatively, we now serve various malls across Indonesia." data-id="OH SNAP! Photobox hadir dari semangat untuk mengabadikan setiap momen hangat, spontan, dan tak terlupakan bersama orang-orang tersayang. Berawal dari konsep photobox tematik yang unik dan kreatif, kini kami hadir di berbagai pusat perbelanjaan (Mall) untuk memberikan pengalaman berfoto terbaik.">
-                OH SNAP! Photobox hadir dari semangat untuk mengabadikan setiap momen hangat, spontan, dan tak terlupakan bersama orang-orang tersayang. Berawal dari konsep photobox tematik yang unik dan kreatif, kini kami hadir di berbagai pusat perbelanjaan (Mall) untuk memberikan pengalaman berfoto terbaik.
-            </p>
-            <p data-en="With studio-grade lighting, high-resolution cameras, instant prints, and digital softcopies, OH SNAP! continues to innovate with thematic concepts like Train Booth, Hotel Booth, Elevator Booth, and many more." data-id="Dengan pencahayaan setara studio profesional, kamera beresolusi tinggi, cetakan instan tajam, serta kemudahan unduh softcopy digital, OH SNAP! terus berinovasi menghadirkan tema-tema ikonik seperti Booth Kereta (Train), Booth Hotel, Booth Elevator, hingga koleksi frame eksklusif setiap bulannya.">
-                Dengan pencahayaan setara studio profesional, kamera beresolusi tinggi, cetakan instan tajam, serta kemudahan unduh softcopy digital, OH SNAP! terus berinovasi menghadirkan tema-tema ikonik seperti Booth Kereta (Train), Booth Hotel, Booth Elevator, hingga koleksi frame eksklusif setiap bulannya.
-            </p>
-            <p data-en="We are committed to always providing the best service, cheerful atmosphere, and modern technology so that every visit to OH SNAP! leaves a sweet memory that lasts forever." data-id="Kami berkomitmen untuk selalu memberikan pelayanan terbaik, suasana yang ceria, serta teknologi modern agar setiap kunjungan ke OH SNAP! meninggalkan kenangan manis yang tak terlupakan.">
-                Kami berkomitmen untuk selalu memberikan pelayanan terbaik, suasana yang ceria, serta teknologi modern agar setiap kunjungan ke OH SNAP! meninggalkan kenangan manis yang tak terlupakan.
-            </p>
+            <div class="story-img-box">
+                <img id="storyImg" src="images/about-img.jpg" alt="Our Story" onerror="this.style.display='none'">
+            </div>
+            <h1 id="storyTitle">OUR <span>STORY</span></h1>
+            <div id="storyText" class="story-content">
+                OH SNAP! Photobox hadir dari semangat untuk mengabadikan setiap momen hangat, spontan, dan tak terlupakan bersama orang-orang tersayang. Berawal dari konsep photobox tematik yang unik dan kreatif, kini kami hadir di berbagai pusat perbelanjaan (Mall).
+            </div>
         </div>
     </div>
 
@@ -96,9 +100,16 @@
         <div class="footer-content">
             <div class="footer-left">
                 <h3 id="fBrand">OH SNAP! Photobox Group</h3>
-                <address><strong data-en="Branches:" data-id="Cabang:">Cabang:</strong> <span id="fBranches">Kediri Mall Lt.5, Plaza Cilacap Lt.3, Laksana Baru Lt.3, Plaza Pekalongan Lt.2, Yogya Pemalang Lt.3</span></address>
-                <p>Instagram: <a id="fIg" href="https://www.instagram.com/ohsnap_photobox" target="_blank">@ohsnap_photobox</a></p>
-                <p>TikTok: <a id="fTt" href="https://www.tiktok.com/@ohsnap_photobox" target="_blank">@ohsnap_photobox</a></p>
+                <address><strong data-en="Branches:" data-id="Cabang:">Cabang:</strong> <span id="fBranches">Kediri Mall Lt.5, Plaza Cilacap Lt.3</span></address>
+                <p>Instagram: <a id="fIg" href="#" target="_blank">@ohsnap_photobox</a></p>
+                <p>TikTok: <a id="fTt" href="#" target="_blank">@ohsnap_photobox</a></p>
+                <div class="footer-helpdesk">
+                    <h4 data-en="Helpdesk" data-id="Bantuan">Helpdesk</h4>
+                    <ul>
+                        <li><a href="resend.html" data-en="Resend Softcopy" data-id="Kirim Ulang Softcopy">Resend Softcopy</a></li>
+                        <li><a href="login.html" data-en="Admin Login" data-id="Masuk Admin">Login Admin</a></li>
+                    </ul>
+                </div>
             </div>
             <a href="lokasi.html" class="footer-location-card">
                 <h4 id="fCardTitle">Find nearby OH SNAP! Studio</h4>
@@ -126,11 +137,32 @@
                 document.documentElement.style.setProperty('--bg-main', cms.colors.bg || '#fff0f5');
                 document.documentElement.style.setProperty('--footer-bg', cms.colors.footer || '#18171d');
             }
+            if (cms.banners && cms.banners.about) {
+                const ab = cms.banners.about;
+                const titleEl = document.getElementById('storyTitle');
+                const textEl = document.getElementById('storyText');
+                const imgEl = document.getElementById('storyImg');
+
+                if (titleEl) {
+                    titleEl.innerHTML = currentLang === 'en' ? (ab.titleEn || 'OUR <span>STORY</span>') : (ab.titleId || 'OUR <span>STORY</span>');
+                }
+                if (textEl) {
+                    const fullTextId = ab.fullId || ab.subId || '';
+                    const fullTextEn = ab.fullEn || ab.subEn || '';
+                    textEl.textContent = currentLang === 'en' ? (fullTextEn || fullTextId) : (fullTextId || fullTextEn);
+                }
+                if (imgEl && ab.imgUrl && ab.imgUrl.trim() !== '') {
+                    imgEl.src = ab.imgUrl;
+                }
+            }
             if (cms.footer) {
                 document.getElementById('fBrand').textContent = cms.footer.brand;
                 document.getElementById('fBranches').textContent = cms.footer.branches;
-                document.getElementById('fCardTitle').textContent = cms.footer.cardTitle;
-                document.getElementById('fCardDesc').textContent = cms.footer.cardDesc;
+                const ig = document.getElementById('fIg'); if(ig) { ig.textContent = cms.footer.igName; ig.href = cms.footer.igUrl || '#'; }
+                const tt = document.getElementById('fTt'); if(tt) { tt.textContent = cms.footer.ttName; tt.href = cms.footer.ttUrl || '#'; }
+
+                document.getElementById('fCardTitle').textContent = currentLang === 'en' ? (cms.footer.cardTitleEn || 'Find nearby OH SNAP! Studio') : (cms.footer.cardTitleId || 'Find nearby OH SNAP! Studio');
+                document.getElementById('fCardDesc').textContent = currentLang === 'en' ? (cms.footer.cardDescEn || 'Find the nearest booth and studio in your city to capture your special moments today!') : (cms.footer.cardDescId || 'Temukan booth dan studio terdekat di kotamu untuk abadikan momen serumu hari ini!');
                 document.getElementById('fCopy').textContent = cms.footer.copyright;
             }
         }
@@ -141,7 +173,8 @@
             document.getElementById('btnEN').classList.toggle('active', lang === 'en');
             document.getElementById('btnID').classList.toggle('active', lang === 'id');
             document.querySelectorAll('[data-en]').forEach(el => {
-                el.innerHTML = el.getAttribute('data-' + lang);
+                const text = el.getAttribute('data-' + lang);
+                if (text !== null) el.innerHTML = text;
             });
             applyCMS();
         }
@@ -149,7 +182,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             setLanguage(currentLang);
             try {
-                const res = acid = await fetch(`${API_URL}/cms`);
+                const res = await fetch(`${API_URL}/cms`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data) { cms = data; localStorage.setItem('ohsnap_cms_data', JSON.stringify(cms)); }
