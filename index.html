@@ -66,7 +66,7 @@
             width: 100%; height: 350px; border-radius: 20px; overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.08); background: #fff; border: 2px solid #fbcfe8;
         }
-        .about-img-box img { width: 100%; height: 100%; object-fit: cover; }
+        .about-img-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
         /* KOTAK PLACEHOLDER PORTRAIT 9:16 PENUH */
         .empty-portrait-box {
@@ -199,14 +199,14 @@
     <section class="about-section">
         <div class="about-grid-container">
             <div class="about-text-box">
-                <h1 data-en="About Our <span>Story</span>" data-id="About Our <span>Story</span>">About Our <span>Story</span></h1>
-                <p data-en="OH SNAP! Photobox was born from the spirit of capturing warm, spontaneous, and unforgettable moments with your favorite people..." data-id="OH SNAP! Photobox hadir dari semangat untuk mengabadikan setiap momen hangat, spontan, dan tak terlupakan bersama orang-orang tersayang...">
+                <h1 id="aboutTitle">About Our <span>Story</span></h1>
+                <p id="aboutSub">
                     OH SNAP! Photobox hadir dari semangat untuk mengabadikan setiap momen hangat, spontan, dan tak terlupakan bersama orang-orang tersayang. Berawal dari konsep photobox tematik yang unik dan kreatif, kini kami hadir di berbagai pusat perbelanjaan (Mall).
                 </p>
-                <a href="story.html" class="btn-readmore" data-en="Read more →" data-id="Read more →">Read more →</a>
+                <a href="story.html" class="btn-readmore" id="aboutBtn">Read more →</a>
             </div>
             <div class="about-img-box">
-                <img id="aboutImg" src="images/about-img.jpg" alt="Our Story Photo" onerror="this.style.display='none'">
+                <img id="aboutImg" src="images/about-img.jpg" alt="Our Story Photo" onerror="this.style.opacity='0'">
             </div>
         </div>
     </section>
@@ -282,7 +282,13 @@
             colors: { primary: '#ff1493', secondary: '#2b4c7e', bg: '#fff0f5', footer: '#18171d' },
             banners: {
                 home: { titleId: 'LANGSUNG CETAK BAWA PULANG', titleEn: 'INSTANT PRINT & TAKE IT HOME', subId: 'Photobox & Self-Photo Studio kekinian.', subEn: 'Trendy Photobox Studio.', imgUrl: 'images/hero-banner.jpg' },
-                about: { imgUrl: 'images/about-img.jpg' }
+                about: { 
+                    titleId: 'About Our <span>Story</span>', titleEn: 'About Our <span>Story</span>', 
+                    subId: 'OH SNAP! Photobox hadir dari semangat untuk mengabadikan setiap momen hangat, spontan, dan tak terlupakan bersama orang-orang tersayang. Berawal dari konsep photobox tematik yang unik dan kreatif, kini kami hadir di berbagai pusat perbelanjaan (Mall).',
+                    subEn: 'OH SNAP! Photobox was born from the spirit of capturing warm, spontaneous, and unforgettable moments with your favorite people...',
+                    btnId: 'Read more →', btnEn: 'Read more →',
+                    imgUrl: 'images/about-img.jpg' 
+                }
             },
             titles: { 
                 titlePromoId: 'Promo <span>Spesial</span> Bulan Ini', subPromoId: 'Jangan lewatkan penawaran menarik di berbagai cabang OH SNAP! Photobox', 
@@ -337,7 +343,21 @@
                     document.getElementById('heroSub').textContent = currentLang === 'en' ? (b.subEn || b.subId) : b.subId;
                     if (b.imgUrl) document.getElementById('heroBannerBg').style.backgroundImage = `url('${b.imgUrl}')`;
                 }
-                // Sinkronisasi mutlak pembacaan foto About Story dari admin (Mendukung semua struktur key)
+                if (cms.banners.about) {
+                    const ab = cms.banners.about;
+                    const aboutTitleEl = document.getElementById('aboutTitle');
+                    const aboutSubEl = document.getElementById('aboutSub');
+                    const aboutBtnEl = document.getElementById('aboutBtn');
+                    if (aboutTitleEl && (ab.titleId || ab.titleEn)) {
+                        aboutTitleEl.innerHTML = currentLang === 'en' ? (ab.titleEn || ab.titleId) : ab.titleId;
+                    }
+                    if (aboutSubEl && (ab.subId || ab.subEn)) {
+                        aboutSubEl.textContent = currentLang === 'en' ? (ab.subEn || ab.subId) : ab.subId;
+                    }
+                    if (aboutBtnEl && (ab.btnId || ab.btnEn)) {
+                        aboutBtnEl.textContent = currentLang === 'en' ? (ab.btnEn || ab.btnId) : ab.btnId;
+                    }
+                }
                 const aboutImgEl = document.getElementById('aboutImg');
                 if (aboutImgEl) {
                     let aboutSrc = 'images/about-img.jpg';
@@ -346,6 +366,8 @@
                     } else if (cms.banners.home && cms.banners.home.aboutImgUrl && cms.banners.home.aboutImgUrl.trim() !== '') {
                         aboutSrc = cms.banners.home.aboutImgUrl;
                     }
+                    aboutImgEl.style.display = 'block';
+                    aboutImgEl.style.opacity = '1';
                     aboutImgEl.src = aboutSrc;
                 }
             }
@@ -391,7 +413,7 @@
                 </div>
             `).join('');
 
-            // Render Videos (Cerdas: File MP4 lokal diputar langsung, Link TikTok/IG menampilkan tombol interaktif yang aman & rapi)
+            // Render Videos
             const videosList = (cms.videos && cms.videos.length > 0) ? cms.videos : defaultCMS.videos;
             document.getElementById('videoGrid').innerHTML = videosList.map(v => {
                 let mediaContent = `<div class="empty-portrait-video"></div>`;
@@ -451,15 +473,19 @@
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
+            const localSaved = localStorage.getItem('ohsnap_cms_data');
+            if (localSaved) {
+                cms = JSON.parse(localSaved);
+            } else {
+                try {
+                    const res = await fetch(`${API_URL}/cms`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data) { cms = data; localStorage.setItem('ohsnap_cms_data', JSON.stringify(cms)); }
+                    }
+                } catch (e) {}
+            }
             setLanguage(currentLang);
-            try {
-                const res = await fetch(`${API_URL}/cms`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data) { cms = data; localStorage.setItem('ohsnap_cms_data', JSON.stringify(cms)); }
-                }
-            } catch (e) {}
-            applyCMS();
         });
     </script>
 </body>

@@ -176,7 +176,7 @@
             </div>
             <div class="form-group" style="max-width: 450px;">
                 <label>Pilih Bagian yang Ingin Diubah:</label>
-                <select id="bannerPageSelect" onchange="loadBannerByPage()">
+                <select id="bannerPageSelect" onchange="onBannerPageChange()">
                     <option value="home">Halaman Home (Beranda)</option>
                     <option value="about">Halaman About Our Story (Home)</option>
                     <option value="layanan">Halaman Layanan</option>
@@ -377,7 +377,6 @@
 
     <script>
         (function() {
-            // PERBAIKAN: localStorage.clear() dihapus agar data yang diedit tidak hilang saat refresh browser
             const savedTab = sessionStorage.getItem('activeAdminTab');
             if (savedTab) {
                 const targetSec = document.getElementById(savedTab);
@@ -389,7 +388,7 @@
                     targetBtn.classList.add('active');
                     const titleText = targetBtn.textContent.replace(/^[^\s]+\s\d+\.\s/, '');
                     const titleEl = document.getElementById('pageTitle');
-                    if(titleEl) titleEl.textContent = titleText;
+                    if (titleEl) titleEl.textContent = titleText;
                 }
             }
         })();
@@ -403,7 +402,7 @@
                 home: { titleId: 'LANGSUNG CETAK BAWA PULANG', titleEn: 'INSTANT PRINT & TAKE IT HOME', subId: 'Photobox & Self-Photo Studio kekinian.', subEn: 'Trendy Photobox Studio.', imgUrl: 'images/hero-banner.jpg' },
                 about: { 
                     titleId: 'About Our Story', titleEn: 'About Our Story', 
-                    subId: 'OH SNAP! Photobox was born from the spirit of capturing warm, spontaneous, and unforgettable moments with your favorite people...', 
+                    subId: 'OH SNAP! Photobox hadir dari semangat untuk mengabadikan setiap momen hangat, spontan, dan tak terlupakan bersama orang-orang tersayang. Berawal dari konsep photobox tematik yang unik dan kreatif, kini kami hadir di berbagai pusat perbelanjaan (Mall).', 
                     subEn: 'OH SNAP! Photobox was born from the spirit of capturing warm, spontaneous, and unforgettable moments with your favorite people...', 
                     btnId: 'Read more →', btnEn: 'Read more →',
                     fullId: 'OH SNAP! Photobox was born from the spirit of capturing warm, spontaneous, and unforgettable moments with your favorite people. Starting with thematic booths designed creatively, we now serve various malls across Indonesia.\n\nWith studio-grade lighting, high-resolution cameras, instant prints, and digital softcopies, OH SNAP! continues to innovate with thematic concepts like Train Booth, Hotel Booth, Elevator Booth, and many more.\n\nWe are committed to always providing the best service, cheerful atmosphere, and modern technology so that every visit to OH SNAP! leaves a sweet memory that lasts forever.',
@@ -428,11 +427,11 @@
                 { title: 'Booth Portable Series', desc: 'Gaya minimalis modern', img: '' }
             ],
             videos: [
-                { title: 'Video 1', url: '' },
-                { title: 'Video 2', url: '' },
-                { title: 'Video 3', url: '' },
-                { title: 'Video 4', url: '' },
-                { title: 'Video 5', url: '' }
+                { title: 'Video 1', url: '', thumb: '' },
+                { title: 'Video 2', url: '', thumb: '' },
+                { title: 'Video 3', url: '', thumb: '' },
+                { title: 'Video 4', url: '', thumb: '' },
+                { title: 'Video 5', url: '', thumb: '' }
             ],
             promos: [
                 { title: 'Promo Pelajar & Mahasiswa', badge: 'HOT PROMO', desc: 'Diskon spesial KTM aktif!', img: '' },
@@ -472,23 +471,60 @@
             ]
         };
 
-        let cmsData = JSON.parse(localStorage.getItem('ohsnap_cms_data')) || defaultCMS;
-        if(!cmsData.banners) cmsData.banners = defaultCMS.banners;
-        if(!cmsData.banners.about) cmsData.banners.about = defaultCMS.banners.about;
-        if(!cmsData.admins) cmsData.admins = defaultCMS.admins;
+        // Memuat data dari localStorage dengan penggabungan aman agar tidak ada data yang ter-reset
+        function loadSavedCMS() {
+            try {
+                const raw = localStorage.getItem('ohsnap_cms_data');
+                if (!raw) return JSON.parse(JSON.stringify(defaultCMS));
+                const parsed = JSON.parse(raw);
+                const merged = JSON.parse(JSON.stringify(defaultCMS));
 
-        // Fungsi pembantu agar setiap perubahan langsung tersimpan di localStorage
+                if (parsed.colors) Object.assign(merged.colors, parsed.colors);
+                if (parsed.banners) {
+                    Object.keys(parsed.banners).forEach(k => {
+                        merged.banners[k] = Object.assign({}, merged.banners[k] || {}, parsed.banners[k]);
+                    });
+                }
+                if (parsed.titles) Object.assign(merged.titles, parsed.titles);
+                if (Array.isArray(parsed.studios) && parsed.studios.length > 0) merged.studios = parsed.studios;
+                if (Array.isArray(parsed.videos) && parsed.videos.length > 0) merged.videos = parsed.videos;
+                if (Array.isArray(parsed.promos) && parsed.promos.length > 0) merged.promos = parsed.promos;
+                if (Array.isArray(parsed.frames) && parsed.frames.length > 0) merged.frames = parsed.frames;
+                if (Array.isArray(parsed.services) && parsed.services.length > 0) merged.services = parsed.services;
+                if (Array.isArray(parsed.locations) && parsed.locations.length > 0) merged.locations = parsed.locations;
+                if (parsed.footer) Object.assign(merged.footer, parsed.footer);
+                if (Array.isArray(parsed.admins) && parsed.admins.length > 0) merged.admins = parsed.admins;
+
+                return merged;
+            } catch (e) {
+                return JSON.parse(JSON.stringify(defaultCMS));
+            }
+        }
+
+        let cmsData = loadSavedCMS();
+        let activeBannerPageKey = sessionStorage.getItem('activeBannerPage') || 'home';
+
         function persistData() {
+            cmsData.lastUpdated = Date.now();
             localStorage.setItem('ohsnap_cms_data', JSON.stringify(cmsData));
         }
 
         function toggleMobileSidebar() { document.getElementById('sidebarEl').classList.toggle('active'); }
 
         function switchTab(sectionId, btnEl, event) {
+            // Simpan semua state sebelum berpindah tab agar tidak ada perubahan yang hilang
+            updateBannerState();
+            updateTitlesState();
+            updateFooterState();
+            persistData();
+
             document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(sectionId).classList.add('active');
-            if (btnEl) { btnEl.classList.add('active'); document.getElementById('pageTitle').textContent = btnEl.textContent.replace(/^[^\s]+\s\d+\.\s/, ''); }
+            if (btnEl) {
+                btnEl.classList.add('active');
+                document.getElementById('pageTitle').textContent = btnEl.textContent.replace(/^[^\s]+\s\d+\.\s/, '');
+            }
             sessionStorage.setItem('activeAdminTab', sectionId);
             document.getElementById('sidebarEl').classList.remove('active');
             initAllRenders();
@@ -553,46 +589,61 @@
             showToast('✅ File video dimuat!');
         }
 
+        function onBannerPageChange() {
+            // Simpan data halaman sebelumnya sebelum mengganti pilihan dropdown
+            const prevPage = activeBannerPageKey;
+            if (prevPage && cmsData.banners[prevPage]) {
+                cmsData.banners[prevPage].titleId = document.getElementById('bannerTitleId').value;
+                cmsData.banners[prevPage].titleEn = document.getElementById('bannerTitleEn').value;
+                cmsData.banners[prevPage].subId = document.getElementById('bannerSubId').value;
+                cmsData.banners[prevPage].subEn = document.getElementById('bannerSubEn').value;
+                if (prevPage === 'about') {
+                    cmsData.banners[prevPage].btnId = document.getElementById('bannerBtnId').value;
+                    cmsData.banners[prevPage].btnEn = document.getElementById('bannerBtnEn').value;
+                    cmsData.banners[prevPage].fullId = document.getElementById('bannerFullId').value;
+                    cmsData.banners[prevPage].fullEn = document.getElementById('bannerFullEn').value;
+                }
+                cmsData.banners[prevPage].imgUrl = document.getElementById('bannerImgUrl').value;
+            }
+            activeBannerPageKey = document.getElementById('bannerPageSelect').value;
+            sessionStorage.setItem('activeBannerPage', activeBannerPageKey);
+            persistData();
+            loadBannerByPage();
+        }
+
         function loadBannerByPage() {
             const selectEl = document.getElementById('bannerPageSelect');
-            const savedPage = sessionStorage.getItem('activeBannerPage');
-            if (savedPage && selectEl.value !== savedPage && !window._bannerPageLoaded) {
-                selectEl.value = savedPage;
+            if (selectEl.value !== activeBannerPageKey) {
+                selectEl.value = activeBannerPageKey;
             }
-            window._bannerPageLoaded = true;
-
             const page = selectEl.value;
-            sessionStorage.setItem('activeBannerPage', page);
-
             const aboutFields = document.getElementById('aboutSpecificFields');
-            if (page === 'about') {
-                aboutFields.style.display = 'block';
-            } else {
-                aboutFields.style.display = 'none';
-            }
+            aboutFields.style.display = (page === 'about') ? 'block' : 'none';
 
             const b = cmsData.banners[page] || { titleId: '', titleEn: '', subId: '', subEn: '', btnId: '', btnEn: '', fullId: '', fullEn: '', imgUrl: '' };
-            document.getElementById('bannerTitleId').value = b.titleId || '';
-            document.getElementById('bannerTitleEn').value = b.titleEn || '';
-            document.getElementById('bannerSubId').value = b.subId || '';
-            document.getElementById('bannerSubEn').value = b.subEn || '';
+            document.getElementById('bannerTitleId').value = b.titleId !== undefined ? b.titleId : '';
+            document.getElementById('bannerTitleEn').value = b.titleEn !== undefined ? b.titleEn : '';
+            document.getElementById('bannerSubId').value = b.subId !== undefined ? b.subId : '';
+            document.getElementById('bannerSubEn').value = b.subEn !== undefined ? b.subEn : '';
             
             const btnIdEl = document.getElementById('bannerBtnId');
             const btnEnEl = document.getElementById('bannerBtnEn');
-            if(btnIdEl) btnIdEl.value = b.btnId || '';
-            if(btnEnEl) btnEnEl.value = b.btnEn || '';
+            if (btnIdEl) btnIdEl.value = b.btnId !== undefined ? b.btnId : '';
+            if (btnEnEl) btnEnEl.value = b.btnEn !== undefined ? b.btnEn : '';
 
             const fullIdEl = document.getElementById('bannerFullId');
             const fullEnEl = document.getElementById('bannerFullEn');
-            if(fullIdEl) fullIdEl.value = b.fullId || '';
-            if(fullEnEl) fullEnEl.value = b.fullEn || '';
+            if (fullIdEl) fullIdEl.value = b.fullId !== undefined ? b.fullId : '';
+            if (fullEnEl) fullEnEl.value = b.fullEn !== undefined ? b.fullEn : '';
 
-            document.getElementById('bannerImgUrl').value = b.imgUrl || '';
+            document.getElementById('bannerImgUrl').value = b.imgUrl !== undefined ? b.imgUrl : '';
         }
 
         function updateBannerState() {
             const page = document.getElementById('bannerPageSelect').value;
-            if(!cmsData.banners[page]) cmsData.banners[page] = {};
+            activeBannerPageKey = page;
+            sessionStorage.setItem('activeBannerPage', page);
+            if (!cmsData.banners[page]) cmsData.banners[page] = {};
             cmsData.banners[page].titleId = document.getElementById('bannerTitleId').value;
             cmsData.banners[page].titleEn = document.getElementById('bannerTitleEn').value;
             cmsData.banners[page].subId = document.getElementById('bannerSubId').value;
@@ -600,20 +651,20 @@
             
             const btnIdEl = document.getElementById('bannerBtnId');
             const btnEnEl = document.getElementById('bannerBtnEn');
-            if(btnIdEl && page === 'about') cmsData.banners[page].btnId = btnIdEl.value;
-            if(btnEnEl && page === 'about') cmsData.banners[page].btnEn = btnEnEl.value;
+            if (btnIdEl && page === 'about') cmsData.banners[page].btnId = btnIdEl.value;
+            if (btnEnEl && page === 'about') cmsData.banners[page].btnEn = btnEnEl.value;
 
             const fullIdEl = document.getElementById('bannerFullId');
             const fullEnEl = document.getElementById('bannerFullEn');
-            if(fullIdEl && page === 'about') cmsData.banners[page].fullId = fullIdEl.value;
-            if(fullEnEl && page === 'about') cmsData.banners[page].fullEn = fullEnEl.value;
+            if (fullIdEl && page === 'about') cmsData.banners[page].fullId = fullIdEl.value;
+            if (fullEnEl && page === 'about') cmsData.banners[page].fullEn = fullEnEl.value;
 
             cmsData.banners[page].imgUrl = document.getElementById('bannerImgUrl').value;
             persistData();
         }
 
         function updateTitlesState() {
-            if(!cmsData.titles) cmsData.titles = {};
+            if (!cmsData.titles) cmsData.titles = {};
             cmsData.titles.titleVideoId = document.getElementById('titleVideoId').value;
             cmsData.titles.subVideoId = document.getElementById('subVideoId').value;
             cmsData.titles.titleStudioId = document.getElementById('titleStudioId').value;
@@ -628,17 +679,17 @@
         }
 
         function loadTitlesState() {
-            if(!cmsData.titles) cmsData.titles = defaultCMS.titles;
-            document.getElementById('titleVideoId').value = cmsData.titles.titleVideoId || '';
-            document.getElementById('subVideoId').value = cmsData.titles.subVideoId || '';
-            document.getElementById('titleStudioId').value = cmsData.titles.titleStudioId || '';
-            document.getElementById('subStudioId').value = cmsData.titles.subStudioId || '';
-            document.getElementById('titlePromoId').value = cmsData.titles.titlePromoId || '';
-            document.getElementById('subPromoId').value = cmsData.titles.subPromoId || '';
-            document.getElementById('titleLayanan').value = cmsData.titles.titleLayanan || '';
-            document.getElementById('subLayanan').value = cmsData.titles.subLayanan || '';
-            document.getElementById('titleFrameId').value = cmsData.titles.titleFrameId || '';
-            document.getElementById('subFrameId').value = cmsData.titles.subFrameId || '';
+            if (!cmsData.titles) cmsData.titles = defaultCMS.titles;
+            document.getElementById('titleVideoId').value = cmsData.titles.titleVideoId !== undefined ? cmsData.titles.titleVideoId : '';
+            document.getElementById('subVideoId').value = cmsData.titles.subVideoId !== undefined ? cmsData.titles.subVideoId : '';
+            document.getElementById('titleStudioId').value = cmsData.titles.titleStudioId !== undefined ? cmsData.titles.titleStudioId : '';
+            document.getElementById('subStudioId').value = cmsData.titles.subStudioId !== undefined ? cmsData.titles.subStudioId : '';
+            document.getElementById('titlePromoId').value = cmsData.titles.titlePromoId !== undefined ? cmsData.titles.titlePromoId : '';
+            document.getElementById('subPromoId').value = cmsData.titles.subPromoId !== undefined ? cmsData.titles.subPromoId : '';
+            document.getElementById('titleLayanan').value = cmsData.titles.titleLayanan !== undefined ? cmsData.titles.titleLayanan : '';
+            document.getElementById('subLayanan').value = cmsData.titles.subLayanan !== undefined ? cmsData.titles.subLayanan : '';
+            document.getElementById('titleFrameId').value = cmsData.titles.titleFrameId !== undefined ? cmsData.titles.titleFrameId : '';
+            document.getElementById('subFrameId').value = cmsData.titles.subFrameId !== undefined ? cmsData.titles.subFrameId : '';
         }
 
         function renderVideos() {
@@ -763,13 +814,13 @@
 
         function loadFooterState() {
             const f = cmsData.footer || defaultCMS.footer;
-            document.getElementById('footerBrand').value = f.brand || '';
-            document.getElementById('footerBranches').value = f.branches || '';
-            document.getElementById('footerIgName').value = f.igName || '';
-            document.getElementById('footerIgUrl').value = f.igUrl || '';
-            document.getElementById('footerTtName').value = f.ttName || '';
-            document.getElementById('footerTtUrl').value = f.ttUrl || '';
-            document.getElementById('footerCopyright').value = f.copyright || '';
+            document.getElementById('footerBrand').value = f.brand !== undefined ? f.brand : '';
+            document.getElementById('footerBranches').value = f.branches !== undefined ? f.branches : '';
+            document.getElementById('footerIgName').value = f.igName !== undefined ? f.igName : '';
+            document.getElementById('footerIgUrl').value = f.igUrl !== undefined ? f.igUrl : '';
+            document.getElementById('footerTtName').value = f.ttName !== undefined ? f.ttName : '';
+            document.getElementById('footerTtUrl').value = f.ttUrl !== undefined ? f.ttUrl : '';
+            document.getElementById('footerCopyright').value = f.copyright !== undefined ? f.copyright : '';
         }
         function updateFooterState() {
             cmsData.footer = {
@@ -811,12 +862,27 @@
         }
 
         let resendList = [];
+        let resendLocalOverrides = JSON.parse(localStorage.getItem('ohsnap_resend_overrides') || '{}');
+
+        function saveResendOverrides() {
+            localStorage.setItem('ohsnap_resend_overrides', JSON.stringify(resendLocalOverrides));
+        }
+
         async function loadResendData() {
             showToast('🔄 Mengambil data dari Spreadsheet...');
             try {
                 const res = await fetch(SCRIPT_URL);
                 const data = await res.json();
-                if (data && Array.isArray(data)) { resendList = data; }
+                if (data && Array.isArray(data)) {
+                    resendList = data.map((item, idx) => {
+                        const rowKey = item.id || `${item.nama || ''}_${item.whatsapp || item.no_hp || ''}_${idx}`;
+                        item._rowKey = rowKey;
+                        if (resendLocalOverrides[rowKey]?.status) {
+                            item.tindak_lanjut = resendLocalOverrides[rowKey].status;
+                        }
+                        return item;
+                    }).filter(item => !resendLocalOverrides[item._rowKey]?.deleted);
+                }
             } catch(e) {
                 resendList = [];
             }
@@ -933,15 +999,26 @@
             });
         }
 
-        async function toggleStatus(id, curr) {
+        async function toggleStatus(idx, curr) {
             const next = (curr === 'Sudah' || curr === 'SUDAH') ? 'Belum' : 'Sudah';
-            const idx = resendList.findIndex(r => (r.id === id || resendList.indexOf(r) === id)); 
-            if(idx !== -1) resendList[idx].tindak_lanjut = next;
+            if (resendList[idx]) {
+                resendList[idx].tindak_lanjut = next;
+                const key = resendList[idx]._rowKey || `row_${idx}`;
+                if (!resendLocalOverrides[key]) resendLocalOverrides[key] = {};
+                resendLocalOverrides[key].status = next;
+                saveResendOverrides();
+            }
             renderResendTable();
         }
 
-        async function delResend(id) {
-            resendList = resendList.filter((r, index) => r.id !== id && index !== id); 
+        async function delResend(idx) {
+            if (resendList[idx]) {
+                const key = resendList[idx]._rowKey || `row_${idx}`;
+                if (!resendLocalOverrides[key]) resendLocalOverrides[key] = {};
+                resendLocalOverrides[key].deleted = true;
+                saveResendOverrides();
+                resendList.splice(idx, 1);
+            }
             renderResendTable();
         }
 
@@ -1012,8 +1089,22 @@
             updateTitlesState();
             updateFooterState();
             persistData();
+            // Sinkronisasi ke API backend lokal jika sedang berjalan
+            fetch(`${API_URL}/cms`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cmsData)
+            }).catch(() => {});
             showToast('✅ Berhasil disimpan!');
         }
+
+        // Kunci otomatis semua input tepat sebelum browser di-refresh / hard refresh
+        window.addEventListener('beforeunload', () => {
+            updateBannerState();
+            updateTitlesState();
+            updateFooterState();
+            persistData();
+        });
 
         function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.style.display='block'; setTimeout(()=>t.style.display='none',3000); }
         function logoutAdmin() { localStorage.removeItem('ohsnap_admin_logged'); window.location.href='login.html'; }
