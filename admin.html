@@ -277,10 +277,6 @@
                 <div><h2>Kelola Frame Layout</h2><span class="badge-min">Batas Minimal: 5 Kolom</span></div>
                 <button class="btn-add" onclick="addFrameItem()">+ Tambah Frame</button>
             </div>
-            <div class="form-grid" style="background:#fdf2f8; padding:15px; border-radius:10px; border:1px solid #fbcfe8; margin-bottom:20px;">
-                <div class="form-group"><label>Judul Seksi Frame</label><input type="text" id="titleFrameId" oninput="updateTitlesState()"></div>
-                <div class="form-group"><label>Subjudul Seksi Frame</label><input type="text" id="subFrameId" oninput="updateTitlesState()"></div>
-            </div>
             <div id="frameListContainer" class="dynamic-list"></div>
         </section>
 
@@ -289,10 +285,6 @@
             <div class="sec-header">
                 <div><h2>Kelola Layanan</h2><span class="badge-min">Batas Minimal: 3 Kolom</span></div>
                 <button class="btn-add" onclick="addServiceItem()">+ Tambah Layanan</button>
-            </div>
-            <div class="form-grid" style="background:#fdf2f8; padding:15px; border-radius:10px; border:1px solid #fbcfe8; margin-bottom:20px;">
-                <div class="form-group"><label>Judul Seksi Layanan</label><input type="text" id="titleLayanan" oninput="updateTitlesState()"></div>
-                <div class="form-group"><label>Subjudul Seksi Layanan</label><input type="text" id="subLayanan" oninput="updateTitlesState()"></div>
             </div>
             <div id="serviceListContainer" class="dynamic-list"></div>
         </section>
@@ -306,7 +298,7 @@
             <div id="locationListContainer" class="dynamic-list"></div>
         </section>
 
-        <!-- 8. FOOTER (Mendukung Bilingual ID & EN) -->
+        <!-- 8. FOOTER -->
         <section id="sec-footer" class="admin-section">
             <div class="sec-header"><h2>Kelola Informasi Footer (ID & EN)</h2></div>
             <div class="form-grid">
@@ -534,9 +526,7 @@
             titles: { 
                 titlePromoId: 'Promo <span>Spesial</span> Bulan Ini', subPromoId: 'Jangan lewatkan penawaran menarik di berbagai cabang OH SNAP! Photobox', 
                 titleStudioId: 'Suasana <span>Studio & Booth</span>', subStudioId: 'Intip keseruan dan estetika bilik tematik kami di berbagai kota', 
-                titleVideoId: 'Keseruan Sobat <span>OH SNAP!</span>', subVideoId: 'Video feed momen seru pelanggan kami di bilik photobox',
-                titleLayanan: 'Pilihan Paket Layanan', subLayanan: 'Pilih paket photobox dan studio favoritmu',
-                titleFrameId: 'Koleksi Frame Eksklusif', subFrameId: 'Pilihan frame tematik untuk cetakan foto terbaikmu'
+                titleVideoId: 'Keseruan Sobat <span>OH SNAP!</span>', subVideoId: 'Video feed momen seru pelanggan kami di bilik photobox'
             },
             studios: [
                 { title: 'Booth Train Thematic', desc: 'Desain kabin kereta estetik', img: '' },
@@ -950,10 +940,6 @@
             cmsData.titles.subStudioId = document.getElementById('subStudioId').value;
             cmsData.titles.titlePromoId = document.getElementById('titlePromoId').value;
             cmsData.titles.subPromoId = document.getElementById('subPromoId').value;
-            cmsData.titles.titleLayanan = document.getElementById('titleLayanan').value;
-            cmsData.titles.subLayanan = document.getElementById('subLayanan').value;
-            cmsData.titles.titleFrameId = document.getElementById('titleFrameId').value;
-            cmsData.titles.subFrameId = document.getElementById('subFrameId').value;
             persistData();
         }
 
@@ -965,10 +951,6 @@
             document.getElementById('subStudioId').value = cmsData.titles.subStudioId !== undefined ? cmsData.titles.subStudioId : '';
             document.getElementById('titlePromoId').value = cmsData.titles.titlePromoId !== undefined ? cmsData.titles.titlePromoId : '';
             document.getElementById('subPromoId').value = cmsData.titles.subPromoId !== undefined ? cmsData.titles.subPromoId : '';
-            document.getElementById('titleLayanan').value = cmsData.titles.titleLayanan !== undefined ? cmsData.titles.titleLayanan : '';
-            document.getElementById('subLayanan').value = cmsData.titles.subLayanan !== undefined ? cmsData.titles.subLayanan : '';
-            document.getElementById('titleFrameId').value = cmsData.titles.titleFrameId !== undefined ? cmsData.titles.titleFrameId : '';
-            document.getElementById('subFrameId').value = cmsData.titles.subFrameId !== undefined ? cmsData.titles.subFrameId : '';
         }
 
         function renderVideos() {
@@ -1257,7 +1239,7 @@
         function renderResendTable() {
             const tb = document.getElementById('resendTableBody'); 
             tb.innerHTML = '';
-            
+             
             if (!resendList || resendList.length === 0) {
                 tb.innerHTML = `<tr><td colspan="13" style="text-align:center; padding:20px; color:#999;">Belum ada data resend softcopy.</td></tr>`;
                 return;
@@ -1271,7 +1253,7 @@
                 const customerEmail = r.email || r.mail || '';
                 const namaCust = r.nama || r.name || 'Pelanggan';
                 const cabangCust = r.cabang || r.branch || '-';
-                
+                 
                 let rawTglMasuk = r.tanggal_masuk || r.tanggal || Object.values(r)[1] || '';
                 let parsedIn = parseColumnValue(rawTglMasuk);
 
@@ -1281,7 +1263,7 @@
 
                 let finalJamFoto = '-';
                 let rawJamFoto = r.jam_foto || r.jam || Object.values(r)[3] || '';
-                
+                 
                 if (rawJamFoto !== null && rawJamFoto !== undefined && String(rawJamFoto).trim() !== '') {
                     let strJam = String(rawJamFoto).trim();
                     if (strJam.includes('GMT') || strJam.includes('UTC')) {
@@ -1388,7 +1370,7 @@
             }
 
             if (!cmsData.admins) cmsData.admins = [];
-            
+             
             const exist = cmsData.admins.some(a => a.username.toLowerCase() === user.toLowerCase());
             if (exist) {
                 alert('Username tersebut sudah terdaftar. Silakan gunakan username lain.');
@@ -1396,7 +1378,7 @@
             }
 
             cmsData.admins.push({ id: cmsData.admins.length + 1, name: name, username: user, pass: pass });
-            
+             
             document.getElementById('newAdminName').value = '';
             document.getElementById('newAdminUser').value = '';
             document.getElementById('newAdminPass').value = '';
