@@ -212,7 +212,7 @@
             </div>
         </section>
 
-        <!-- 2. VIDEO FEED (Diubah dari Thumbnail menjadi Upload/URL File MP4) -->
+        <!-- 2. VIDEO FEED -->
         <section id="sec-video" class="admin-section">
             <div class="sec-header">
                 <div><h2>Kelola Halaman Video Feed</h2><span class="badge-min">Batas Minimal: 5 Kolom</span></div>
@@ -306,7 +306,7 @@
             <div class="form-grid">
                 <div class="color-picker-box"><input type="color" id="pickerPrimary" class="color-wheel" oninput="syncColor('Primary', this.value)"><div style="flex:1;"><label>Warna Utama</label><input type="text" id="hexPrimary" oninput="syncColor('Primary', this.value)"></div></div>
                 <div class="color-picker-box"><input type="color" id="pickerSecondary" class="color-wheel" oninput="syncColor('Secondary', this.value)"><div style="flex:1;"><label>Warna Teks</label><input type="text" id="hexSecondary" oninput="syncColor('Secondary', this.value)"></div></div>
-                <div class="color-picker-box"><input type="color" id="pickerBg" class="color-wheel" oninput="syncColor('Bg', this.value)"><div style="flex:1;"><label>Warna Background</label><input type="text" id="hexBg" oninput="syncColor('HexBg', this.value)"></div></div>
+                <div class="color-picker-box"><input type="color" id="pickerBg" class="color-wheel" oninput="syncColor('Bg', this.value)"><div style="flex:1;"><label>Warna Background</label><input type="text" id="hexBg" oninput="syncColor('Bg', this.value)"></div></div>
                 <div class="color-picker-box"><input type="color" id="pickerFooter" class="color-wheel" oninput="syncColor('Footer', this.value)"><div style="flex:1;"><label>Warna Footer</label><input type="text" id="hexFooter" oninput="syncColor('Footer', this.value)"></div></div>
             </div>
         </section>
@@ -377,8 +377,7 @@
 
     <script>
         (function() {
-            localStorage.clear();
-
+            // PERBAIKAN: localStorage.clear() dihapus agar data yang diedit tidak hilang saat refresh browser
             const savedTab = sessionStorage.getItem('activeAdminTab');
             if (savedTab) {
                 const targetSec = document.getElementById(savedTab);
@@ -474,11 +473,13 @@
         };
 
         let cmsData = JSON.parse(localStorage.getItem('ohsnap_cms_data')) || defaultCMS;
-        if(!cmsData.banners.about) {
-            cmsData.banners.about = defaultCMS.banners.about;
-        }
-        if(!cmsData.admins) {
-            cmsData.admins = defaultCMS.admins;
+        if(!cmsData.banners) cmsData.banners = defaultCMS.banners;
+        if(!cmsData.banners.about) cmsData.banners.about = defaultCMS.banners.about;
+        if(!cmsData.admins) cmsData.admins = defaultCMS.admins;
+
+        // Fungsi pembantu agar setiap perubahan langsung tersimpan di localStorage
+        function persistData() {
+            localStorage.setItem('ohsnap_cms_data', JSON.stringify(cmsData));
         }
 
         function toggleMobileSidebar() { document.getElementById('sidebarEl').classList.toggle('active'); }
@@ -494,8 +495,19 @@
             if (event) event.preventDefault();
         }
 
-        function clearInputUrl(inputId, cb) { document.getElementById(inputId).value = ''; if (cb) cb(); showToast('Dikosongkan!'); }
-        function clearArrayImg(arr, idx, prop) { cmsData[arr][idx][prop] = ''; initAllRenders(); showToast('Dikosongkan!'); }
+        function clearInputUrl(inputId, cb) {
+            document.getElementById(inputId).value = '';
+            if (cb) cb();
+            persistData();
+            showToast('Dikosongkan!');
+        }
+
+        function clearArrayImg(arr, idx, prop) {
+            cmsData[arr][idx][prop] = '';
+            persistData();
+            initAllRenders();
+            showToast('Dikosongkan!');
+        }
 
         function togglePasswordVisibility(inputId, btnEl) {
             const input = document.getElementById(inputId);
@@ -515,24 +527,44 @@
             const relativePath = `images/${file.name}`;
             document.getElementById(targetId).value = relativePath;
             if (cb) cb();
+            persistData();
             showToast('✅ Berhasil dimuat!');
         }
 
-        // Fungsi Upload File Video MP4 (Menggantikan Thumbnail)
+        async function uploadArrayImg(inputEl, arrName, index, propName) {
+            const file = inputEl.files[0];
+            if (!file) return;
+            showToast('⏳ Memuat file...');
+            const relativePath = `images/${file.name}`;
+            cmsData[arrName][index][propName] = relativePath;
+            persistData();
+            initAllRenders();
+            showToast('✅ File dimuat!');
+        }
+
         async function uploadVideoFile(inputEl, arrName, index, propName) {
             const file = inputEl.files[0];
             if (!file) return;
-            showToast('⏳ Memuat file MP4...');
+            showToast('⏳ Memuat file video...');
             const relativePath = `images/${file.name}`;
             cmsData[arrName][index][propName] = relativePath;
+            persistData();
             initAllRenders();
-            showToast('✅ File MP4 dimuat!');
+            showToast('✅ File video dimuat!');
         }
 
         function loadBannerByPage() {
-            const page = document.getElementById('bannerPageSelect').value;
+            const selectEl = document.getElementById('bannerPageSelect');
+            const savedPage = sessionStorage.getItem('activeBannerPage');
+            if (savedPage && selectEl.value !== savedPage && !window._bannerPageLoaded) {
+                selectEl.value = savedPage;
+            }
+            window._bannerPageLoaded = true;
+
+            const page = selectEl.value;
+            sessionStorage.setItem('activeBannerPage', page);
+
             const aboutFields = document.getElementById('aboutSpecificFields');
-            
             if (page === 'about') {
                 aboutFields.style.display = 'block';
             } else {
@@ -577,38 +609,51 @@
             if(fullEnEl && page === 'about') cmsData.banners[page].fullEn = fullEnEl.value;
 
             cmsData.banners[page].imgUrl = document.getElementById('bannerImgUrl').value;
+            persistData();
         }
 
         function updateTitlesState() {
             if(!cmsData.titles) cmsData.titles = {};
+            cmsData.titles.titleVideoId = document.getElementById('titleVideoId').value;
+            cmsData.titles.subVideoId = document.getElementById('subVideoId').value;
+            cmsData.titles.titleStudioId = document.getElementById('titleStudioId').value;
+            cmsData.titles.subStudioId = document.getElementById('subStudioId').value;
+            cmsData.titles.titlePromoId = document.getElementById('titlePromoId').value;
+            cmsData.titles.subPromoId = document.getElementById('subPromoId').value;
             cmsData.titles.titleLayanan = document.getElementById('titleLayanan').value;
             cmsData.titles.subLayanan = document.getElementById('subLayanan').value;
             cmsData.titles.titleFrameId = document.getElementById('titleFrameId').value;
             cmsData.titles.subFrameId = document.getElementById('subFrameId').value;
+            persistData();
         }
 
         function loadTitlesState() {
             if(!cmsData.titles) cmsData.titles = defaultCMS.titles;
+            document.getElementById('titleVideoId').value = cmsData.titles.titleVideoId || '';
+            document.getElementById('subVideoId').value = cmsData.titles.subVideoId || '';
+            document.getElementById('titleStudioId').value = cmsData.titles.titleStudioId || '';
+            document.getElementById('subStudioId').value = cmsData.titles.subStudioId || '';
+            document.getElementById('titlePromoId').value = cmsData.titles.titlePromoId || '';
+            document.getElementById('subPromoId').value = cmsData.titles.subPromoId || '';
             document.getElementById('titleLayanan').value = cmsData.titles.titleLayanan || '';
             document.getElementById('subLayanan').value = cmsData.titles.subLayanan || '';
             document.getElementById('titleFrameId').value = cmsData.titles.titleFrameId || '';
             document.getElementById('subFrameId').value = cmsData.titles.subFrameId || '';
         }
 
-        // Render Video Admin: Kolom Thumbnail diganti khusus Upload/URL MP4
         function renderVideos() {
             const c = document.getElementById('videoListContainer'); if (!c) return; c.innerHTML = '';
             const total = cmsData.videos.length;
             cmsData.videos.forEach((v, i) => {
                 let navHtml = total > 5 ? `<div>${i > 0 ? `<button type="button" class="order-nav-btn" onclick="moveVideo(${i}, -1)">&lt;</button>` : ''}${i < total - 1 ? `<button type="button" class="order-nav-btn" onclick="moveVideo(${i}, 1)">&gt;</button>` : ''}</div>` : '';
                 c.innerHTML += `<div class="item-card"><h4><span>Video #${i+1}</span><div style="display:flex;gap:6px;align-items:center;">${navHtml}<button class="btn-remove" onclick="removeVideo(${i})">Hapus</button></div></h4>
-                    <div class="form-group"><label>Judul Video</label><input type="text" value="${v.title || ''}" oninput="cmsData.videos[${i}].title=this.value"></div>
-                    <div class="form-group"><label>File / URL MP4 (Format 9:16)</label><div class="input-with-clear"><input type="text" value="${v.url || ''}" placeholder="images/video-1.mp4" oninput="cmsData.videos[${i}].url=this.value.trim()"><button type="button" class="btn-clear-input" onclick="clearArrayImg('videos',${i},'url')">❌ X</button></div><input type="file" accept="video/mp4" style="margin-top:6px;" onchange="uploadVideoFile(this,'videos',${i},'url')"></div></div>`;
+                    <div class="form-group"><label>Judul Video</label><input type="text" value="${v.title || ''}" oninput="cmsData.videos[${i}].title=this.value; persistData();"></div>
+                    <div class="form-group"><label>Link URL (IG/TikTok/MP4) atau Upload File</label><div class="input-with-clear"><input type="text" value="${v.url || ''}" placeholder="https://www.instagram.com/... atau images/video-1.mp4" oninput="cmsData.videos[${i}].url=this.value.trim(); persistData();"><button type="button" class="btn-clear-input" onclick="clearArrayImg('videos',${i},'url')">❌ X</button></div><input type="file" accept="video/mp4,video/*" style="margin-top:6px;" onchange="uploadVideoFile(this,'videos',${i},'url')"></div></div>`;
             });
         }
-        function addVideoItem() { cmsData.videos.push({title:'Baru', url:''}); renderVideos(); }
-        function removeVideo(i) { if(cmsData.videos.length<=5) return alert('Batas minimal Video Feed adalah 5!'); cmsData.videos.splice(i,1); renderVideos(); }
-        function moveVideo(index, dir) { const t = index + dir; if(t<0||t>=cmsData.videos.length)return; const tmp=cmsData.videos[index]; cmsData.videos[index]=cmsData.videos[t]; cmsData.videos[t]=tmp; renderVideos(); }
+        function addVideoItem() { cmsData.videos.push({title:'Baru', url:''}); persistData(); renderVideos(); }
+        function removeVideo(i) { if(cmsData.videos.length<=5) return alert('Batas minimal Video Feed adalah 5!'); cmsData.videos.splice(i,1); persistData(); renderVideos(); }
+        function moveVideo(index, dir) { const t = index + dir; if(t<0||t>=cmsData.videos.length)return; const tmp=cmsData.videos[index]; cmsData.videos[index]=cmsData.videos[t]; cmsData.videos[t]=tmp; persistData(); renderVideos(); }
 
         function renderStudios() {
             const c = document.getElementById('studioListContainer'); if (!c) return; c.innerHTML = '';
@@ -616,14 +661,14 @@
             cmsData.studios.forEach((s, i) => {
                 let navHtml = total > 4 ? `<div>${i > 0 ? `<button type="button" class="order-nav-btn" onclick="moveStudio(${i}, -1)">&lt;</button>` : ''}${i < total - 1 ? `<button type="button" class="order-nav-btn" onclick="moveStudio(${i}, 1)">&gt;</button>` : ''}</div>` : '';
                 c.innerHTML += `<div class="item-card"><h4><span>Studio #${i+1}</span><div style="display:flex;gap:6px;align-items:center;">${navHtml}<button class="btn-remove" onclick="removeStudio(${i})">Hapus</button></div></h4>
-                    <div class="form-group"><label>Nama</label><input type="text" value="${s.title || ''}" oninput="cmsData.studios[${i}].title=this.value"></div>
-                    <div class="form-group"><label>Desc</label><input type="text" value="${s.desc || ''}" oninput="cmsData.studios[${i}].desc=this.value"></div>
-                    <div class="form-group"><label>Foto</label><div class="input-with-clear"><input type="text" value="${s.img || ''}" oninput="cmsData.studios[${i}].img=this.value"><button type="button" class="btn-clear-input" onclick="clearArrayImg('studios',${i},'img')">❌ X</button></div><input type="file" accept="image/*" style="margin-top:6px;" onchange="uploadArrayImg(this,'studios',${i},'img')"></div></div>`;
+                    <div class="form-group"><label>Nama</label><input type="text" value="${s.title || ''}" oninput="cmsData.studios[${i}].title=this.value; persistData();"></div>
+                    <div class="form-group"><label>Desc</label><input type="text" value="${s.desc || ''}" oninput="cmsData.studios[${i}].desc=this.value; persistData();"></div>
+                    <div class="form-group"><label>Foto</label><div class="input-with-clear"><input type="text" value="${s.img || ''}" oninput="cmsData.studios[${i}].img=this.value; persistData();"><button type="button" class="btn-clear-input" onclick="clearArrayImg('studios',${i},'img')">❌ X</button></div><input type="file" accept="image/*" style="margin-top:6px;" onchange="uploadArrayImg(this,'studios',${i},'img')"></div></div>`;
             });
         }
-        function addStudioItem() { cmsData.studios.push({title:'Studio Baru', desc:'', img:''}); renderStudios(); }
-        function removeStudio(i) { if(cmsData.studios.length<=4) return alert('Batas minimal Suasana Studio adalah 4!'); cmsData.studios.splice(i,1); renderStudios(); }
-        function moveStudio(index, dir) { const t = index + dir; if(t<0||t>=cmsData.studios.length)return; const tmp=cmsData.studios[index]; cmsData.studios[index]=cmsData.studios[t]; cmsData.studios[t]=tmp; renderStudios(); }
+        function addStudioItem() { cmsData.studios.push({title:'Studio Baru', desc:'', img:''}); persistData(); renderStudios(); }
+        function removeStudio(i) { if(cmsData.studios.length<=4) return alert('Batas minimal Suasana Studio adalah 4!'); cmsData.studios.splice(i,1); persistData(); renderStudios(); }
+        function moveStudio(index, dir) { const t = index + dir; if(t<0||t>=cmsData.studios.length)return; const tmp=cmsData.studios[index]; cmsData.studios[index]=cmsData.studios[t]; cmsData.studios[t]=tmp; persistData(); renderStudios(); }
 
         function renderPromos() {
             const c = document.getElementById('promoListContainer'); if (!c) return; c.innerHTML = '';
@@ -631,15 +676,15 @@
             cmsData.promos.forEach((p, i) => {
                 let navHtml = total > 3 ? `<div>${i > 0 ? `<button type="button" class="order-nav-btn" onclick="movePromo(${i}, -1)">&lt;</button>` : ''}${i < total - 1 ? `<button type="button" class="order-nav-btn" onclick="movePromo(${i}, 1)">&gt;</button>` : ''}</div>` : '';
                 c.innerHTML += `<div class="item-card"><h4><span>Promo #${i+1}</span><div style="display:flex;gap:6px;align-items:center;">${navHtml}<button class="btn-remove" onclick="removePromo(${i})">Hapus</button></div></h4>
-                    <div class="form-group"><label>Judul</label><input type="text" value="${p.title || ''}" oninput="cmsData.promos[${i}].title=this.value"></div>
-                    <div class="form-group"><label>Badge</label><input type="text" value="${p.badge || ''}" oninput="cmsData.promos[${i}].badge=this.value"></div>
-                    <div class="form-group"><label>Desc</label><textarea oninput="cmsData.promos[${i}].desc=this.value">${p.desc || ''}</textarea></div>
-                    <div class="form-group"><label>Poster</label><div class="input-with-clear"><input type="text" value="${p.img || ''}" oninput="cmsData.promos[${i}].img=this.value"><button type="button" class="btn-clear-input" onclick="clearArrayImg('promos',${i},'img')">❌ X</button></div><input type="file" accept="image/*" style="margin-top:6px;" onchange="uploadArrayImg(this,'promos',${i},'img')"></div></div>`;
+                    <div class="form-group"><label>Judul</label><input type="text" value="${p.title || ''}" oninput="cmsData.promos[${i}].title=this.value; persistData();"></div>
+                    <div class="form-group"><label>Badge</label><input type="text" value="${p.badge || ''}" oninput="cmsData.promos[${i}].badge=this.value; persistData();"></div>
+                    <div class="form-group"><label>Desc</label><textarea oninput="cmsData.promos[${i}].desc=this.value; persistData();">${p.desc || ''}</textarea></div>
+                    <div class="form-group"><label>Poster</label><div class="input-with-clear"><input type="text" value="${p.img || ''}" oninput="cmsData.promos[${i}].img=this.value; persistData();"><button type="button" class="btn-clear-input" onclick="clearArrayImg('promos',${i},'img')">❌ X</button></div><input type="file" accept="image/*" style="margin-top:6px;" onchange="uploadArrayImg(this,'promos',${i},'img')"></div></div>`;
             });
         }
-        function addPromoItem() { cmsData.promos.push({title:'Promo Baru', badge:'PROMO', desc:'', img:''}); renderPromos(); }
-        function removePromo(i) { if(cmsData.promos.length<=3) return alert('Batas minimal Kelola Promo adalah 3!'); cmsData.promos.splice(i,1); renderPromos(); }
-        function movePromo(index, dir) { const t = index + dir; if(t<0||t>=cmsData.promos.length)return; const tmp=cmsData.promos[index]; cmsData.promos[index]=cmsData.promos[t]; cmsData.promos[t]=tmp; renderPromos(); }
+        function addPromoItem() { cmsData.promos.push({title:'Promo Baru', badge:'PROMO', desc:'', img:''}); persistData(); renderPromos(); }
+        function removePromo(i) { if(cmsData.promos.length<=3) return alert('Batas minimal Kelola Promo adalah 3!'); cmsData.promos.splice(i,1); persistData(); renderPromos(); }
+        function movePromo(index, dir) { const t = index + dir; if(t<0||t>=cmsData.promos.length)return; const tmp=cmsData.promos[index]; cmsData.promos[index]=cmsData.promos[t]; cmsData.promos[t]=tmp; persistData(); renderPromos(); }
 
         function renderFrames() {
             const c = document.getElementById('frameListContainer'); 
@@ -659,16 +704,16 @@
                             <button class="btn-remove" onclick="removeFrame(${i})">Hapus</button>
                         </div>
                     </h4>
-                    <div class="form-group"><label>Nama Frame</label><input type="text" value="${f.title || ''}" oninput="cmsData.frames[${i}].title=this.value"></div>
-                    <div class="form-group"><label>Kategori</label><input type="text" value="${f.category || ''}" oninput="cmsData.frames[${i}].category=this.value"></div>
-                    <div class="form-group"><label>Deskripsi Frame</label><textarea oninput="cmsData.frames[${i}].desc=this.value">${f.desc || ''}</textarea></div>
-                    <div class="form-group"><label>Gambar Frame</label><div class="input-with-clear"><input type="text" value="${f.img || ''}" placeholder="images/frame-1.jpg" oninput="cmsData.frames[${i}].img=this.value"><button type="button" class="btn-clear-input" onclick="clearArrayImg('frames',${i},'img')">❌ X</button></div><input type="file" accept="image/*" style="margin-top:6px;" onchange="uploadArrayImg(this,'frames',${i},'img')"></div>
+                    <div class="form-group"><label>Nama Frame</label><input type="text" value="${f.title || ''}" oninput="cmsData.frames[${i}].title=this.value; persistData();"></div>
+                    <div class="form-group"><label>Kategori</label><input type="text" value="${f.category || ''}" oninput="cmsData.frames[${i}].category=this.value; persistData();"></div>
+                    <div class="form-group"><label>Deskripsi Frame</label><textarea oninput="cmsData.frames[${i}].desc=this.value; persistData();">${f.desc || ''}</textarea></div>
+                    <div class="form-group"><label>Gambar Frame</label><div class="input-with-clear"><input type="text" value="${f.img || ''}" placeholder="images/frame-1.jpg" oninput="cmsData.frames[${i}].img=this.value; persistData();"><button type="button" class="btn-clear-input" onclick="clearArrayImg('frames',${i},'img')">❌ X</button></div><input type="file" accept="image/*" style="margin-top:6px;" onchange="uploadArrayImg(this,'frames',${i},'img')"></div>
                 </div>`;
             });
         }
-        function addFrameItem() { if(!cmsData.frames) cmsData.frames=[]; cmsData.frames.push({title:'Frame Baru', category:'New', desc:'', img:''}); renderFrames(); }
-        function removeFrame(i) { if(cmsData.frames.length<=5) return alert('Batas minimal Frame Layout adalah 5!'); cmsData.frames.splice(i,1); renderFrames(); }
-        function moveFrame(index, dir) { const t = index + dir; if(t<0||t>=cmsData.frames.length)return; const tmp=cmsData.frames[index]; cmsData.frames[index]=cmsData.frames[t]; cmsData.frames[t]=tmp; renderFrames(); }
+        function addFrameItem() { if(!cmsData.frames) cmsData.frames=[]; cmsData.frames.push({title:'Frame Baru', category:'New', desc:'', img:''}); persistData(); renderFrames(); }
+        function removeFrame(i) { if(cmsData.frames.length<=5) return alert('Batas minimal Frame Layout adalah 5!'); cmsData.frames.splice(i,1); persistData(); renderFrames(); }
+        function moveFrame(index, dir) { const t = index + dir; if(t<0||t>=cmsData.frames.length)return; const tmp=cmsData.frames[index]; cmsData.frames[index]=cmsData.frames[t]; cmsData.frames[t]=tmp; persistData(); renderFrames(); }
 
         function renderServices() {
             const c = document.getElementById('serviceListContainer'); 
@@ -688,16 +733,16 @@
                             <button class="btn-remove" onclick="removeSrv(${i})">Hapus</button>
                         </div>
                     </h4>
-                    <div class="form-group"><label>Judul Layanan (Title)</label><input type="text" value="${s.titleId || s.title || ''}" oninput="cmsData.services[${i}].titleId=this.value"></div>
-                    <div class="form-group"><label>Harga (Contoh: Rp 35.000)</label><input type="text" value="${s.price || ''}" oninput="cmsData.services[${i}].price=this.value"></div>
-                    <div class="form-group"><label>Deskripsi Layanan (Desc)</label><textarea oninput="cmsData.services[${i}].descId=this.value">${s.descId || s.desc || ''}</textarea></div>
-                    <div class="form-group"><label>Foto Layanan (Format Portrait)</label><div class="input-with-clear"><input type="text" value="${s.img || ''}" placeholder="images/layanan-1.jpg" oninput="cmsData.services[${i}].img=this.value"><button type="button" class="btn-clear-input" onclick="clearArrayImg('services',${i},'img')">❌ X</button></div><input type="file" accept="image/*" style="margin-top:6px;" onchange="uploadArrayImg(this,'services',${i},'img')"></div>
+                    <div class="form-group"><label>Judul Layanan (Title)</label><input type="text" value="${s.titleId || s.title || ''}" oninput="cmsData.services[${i}].titleId=this.value; persistData();"></div>
+                    <div class="form-group"><label>Harga (Contoh: Rp 35.000)</label><input type="text" value="${s.price || ''}" oninput="cmsData.services[${i}].price=this.value; persistData();"></div>
+                    <div class="form-group"><label>Deskripsi Layanan (Desc)</label><textarea oninput="cmsData.services[${i}].descId=this.value; persistData();">${s.descId || s.desc || ''}</textarea></div>
+                    <div class="form-group"><label>Foto Layanan (Format Portrait)</label><div class="input-with-clear"><input type="text" value="${s.img || ''}" placeholder="images/layanan-1.jpg" oninput="cmsData.services[${i}].img=this.value; persistData();"><button type="button" class="btn-clear-input" onclick="clearArrayImg('services',${i},'img')">❌ X</button></div><input type="file" accept="image/*" style="margin-top:6px;" onchange="uploadArrayImg(this,'services',${i},'img')"></div>
                 </div>`;
             });
         }
-        function addServiceItem() { if(!cmsData.services) cmsData.services=[]; cmsData.services.push({titleId:'Layanan Baru', price:'Rp 0', descId:'', img:''}); renderServices(); }
-        function removeSrv(i) { if(cmsData.services.length<=3) return alert('Batas minimal Layanan adalah 3!'); cmsData.services.splice(i,1); renderServices(); }
-        function moveService(index, dir) { const t = index + dir; if(t<0||t>=cmsData.services.length)return; const tmp=cmsData.services[index]; cmsData.services[index]=cmsData.services[t]; cmsData.services[t]=tmp; renderServices(); }
+        function addServiceItem() { if(!cmsData.services) cmsData.services=[]; cmsData.services.push({titleId:'Layanan Baru', price:'Rp 0', descId:'', img:''}); persistData(); renderServices(); }
+        function removeSrv(i) { if(cmsData.services.length<=3) return alert('Batas minimal Layanan adalah 3!'); cmsData.services.splice(i,1); persistData(); renderServices(); }
+        function moveService(index, dir) { const t = index + dir; if(t<0||t>=cmsData.services.length)return; const tmp=cmsData.services[index]; cmsData.services[index]=cmsData.services[t]; cmsData.services[t]=tmp; persistData(); renderServices(); }
 
         function renderLocations() {
             const c = document.getElementById('locationListContainer'); if (!c) return; c.innerHTML = '';
@@ -705,16 +750,16 @@
             cmsData.locations.forEach((l, i) => {
                 let navHtml = total > 5 ? `<div>${i > 0 ? `<button type="button" class="order-nav-btn" onclick="moveLocation(${i}, -1)">&lt;</button>` : ''}${i < total - 1 ? `<button type="button" class="order-nav-btn" onclick="moveLocation(${i}, 1)">&gt;</button>` : ''}</div>` : '';
                 c.innerHTML += `<div class="item-card"><h4><span>Lokasi #${i+1}</span><div style="display:flex;gap:6px;align-items:center;">${navHtml}<button class="btn-remove" onclick="removeLoc(${i})">Hapus</button></div></h4>
-                    <div class="form-group"><label>Nama Cabang</label><input type="text" value="${l.name || ''}" oninput="cmsData.locations[${i}].name=this.value"></div>
-                    <div class="form-group"><label>Lantai</label><input type="text" value="${l.floor || ''}" oninput="cmsData.locations[${i}].floor=this.value"></div>
-                    <div class="form-group"><label>Jam Buka</label><input type="text" value="${l.hours || ''}" oninput="cmsData.locations[${i}].hours=this.value"></div>
-                    <div class="form-group"><label>Maps URL</label><input type="text" value="${l.mapUrl || ''}" oninput="cmsData.locations[${i}].mapUrl=this.value"></div>
-                    <div class="form-group"><label>Foto Cabang (Format 1:1)</label><div class="input-with-clear"><input type="text" value="${l.img || ''}" placeholder="images/lokasi-1.jpg" oninput="cmsData.locations[${i}].img=this.value"><button type="button" class="btn-clear-input" onclick="clearArrayImg('locations',${i},'img')">❌ X</button></div><input type="file" accept="image/*" style="margin-top:6px;" onchange="uploadArrayImg(this,'locations',${i},'img')"></div></div>`;
+                    <div class="form-group"><label>Nama Cabang</label><input type="text" value="${l.name || ''}" oninput="cmsData.locations[${i}].name=this.value; persistData();"></div>
+                    <div class="form-group"><label>Lantai</label><input type="text" value="${l.floor || ''}" oninput="cmsData.locations[${i}].floor=this.value; persistData();"></div>
+                    <div class="form-group"><label>Jam Buka</label><input type="text" value="${l.hours || ''}" oninput="cmsData.locations[${i}].hours=this.value; persistData();"></div>
+                    <div class="form-group"><label>Maps URL</label><input type="text" value="${l.mapUrl || ''}" oninput="cmsData.locations[${i}].mapUrl=this.value; persistData();"></div>
+                    <div class="form-group"><label>Foto Cabang (Format 1:1)</label><div class="input-with-clear"><input type="text" value="${l.img || ''}" placeholder="images/lokasi-1.jpg" oninput="cmsData.locations[${i}].img=this.value; persistData();"><button type="button" class="btn-clear-input" onclick="clearArrayImg('locations',${i},'img')">❌ X</button></div><input type="file" accept="image/*" style="margin-top:6px;" onchange="uploadArrayImg(this,'locations',${i},'img')"></div></div>`;
             });
         }
-        function addLocationItem() { cmsData.locations.push({name:'Cabang Baru', floor:'Lt.1', hours:'10.00 - 22.00', mapUrl:'', img:''}); renderLocations(); }
-        function removeLoc(i) { if(cmsData.locations.length<=5) return alert('Batas minimal Lokasi Cabang adalah 5!'); cmsData.locations.splice(i,1); renderLocations(); }
-        function moveLocation(index, dir) { const t = index + dir; if(t<0||t>=cmsData.locations.length)return; const tmp=cmsData.locations[index]; cmsData.locations[index]=cmsData.locations[t]; cmsData.locations[t]=tmp; renderLocations(); }
+        function addLocationItem() { cmsData.locations.push({name:'Cabang Baru', floor:'Lt.1', hours:'10.00 - 22.00', mapUrl:'', img:''}); persistData(); renderLocations(); }
+        function removeLoc(i) { if(cmsData.locations.length<=5) return alert('Batas minimal Lokasi Cabang adalah 5!'); cmsData.locations.splice(i,1); persistData(); renderLocations(); }
+        function moveLocation(index, dir) { const t = index + dir; if(t<0||t>=cmsData.locations.length)return; const tmp=cmsData.locations[index]; cmsData.locations[index]=cmsData.locations[t]; cmsData.locations[t]=tmp; persistData(); renderLocations(); }
 
         function loadFooterState() {
             const f = cmsData.footer || defaultCMS.footer;
@@ -736,6 +781,7 @@
                 ttUrl: document.getElementById('footerTtUrl').value,
                 copyright: document.getElementById('footerCopyright').value
             };
+            persistData();
         }
 
         function loadColors() {
@@ -756,6 +802,7 @@
                 bg: document.getElementById('hexBg').value,
                 footer: document.getElementById('hexFooter').value
             };
+            persistData();
         }
 
         function resetDefaultColors() { 
@@ -964,7 +1011,7 @@
             updateBannerState();
             updateTitlesState();
             updateFooterState();
-            localStorage.setItem('ohsnap_cms_data', JSON.stringify(cmsData));
+            persistData();
             showToast('✅ Berhasil disimpan!');
         }
 
