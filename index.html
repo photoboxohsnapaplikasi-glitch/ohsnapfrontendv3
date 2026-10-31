@@ -84,7 +84,7 @@
         .section-head h2 span { color: var(--primary); }
         .section-head p { color: #6b7280; font-size: 1rem; }
 
-        /* SISTEM SLIDER / CAROUSEL DENGAN TOMBOL < DAN > */
+        /* SISTEM SLIDER / CAROUSEL DENGAN LEBAR PRESISI AGAR TIDAK TERPOTONG */
         .slider-wrapper {
             position: relative;
             display: flex;
@@ -96,14 +96,14 @@
             overflow-x: auto;
             scroll-behavior: smooth;
             width: 100%;
-            padding: 10px 5px;
+            padding: 10px 0;
             scrollbar-width: none;
         }
         .slider-container::-webkit-scrollbar { display: none; }
 
-        .slide-item-studio { flex: 0 0 280px; }
-        .slide-item-promo { flex: 0 0 320px; }
-        .slide-item-video { flex: 0 0 230px; }
+        .slide-item-studio { flex: 0 0 calc((100% - 48px) / 4); min-width: 240px; }
+        .slide-item-promo { flex: 0 0 calc((100% - 32px) / 3); min-width: 280px; }
+        .slide-item-video { flex: 0 0 calc((100% - 64px) / 5); min-width: 195px; }
 
         .slider-btn {
             position: absolute;
@@ -126,8 +126,8 @@
             transition: 0.2s;
         }
         .slider-btn:hover { background: #e00d7f; transform: translateY(-50%) scale(1.05); }
-        .slider-btn-left { left: -25px; }
-        .slider-btn-right { right: -25px; }
+        .slider-btn-left { left: -22px; }
+        .slider-btn-right { right: -22px; }
 
         .card-item { background: #fff; border: 1px solid #fbcfe8; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 25px rgba(255,182,193,0.18); display: flex; flex-direction: column; height: 100%; }
         .card-body { padding: 22px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
@@ -146,6 +146,11 @@
         .location-btn-action { background: var(--primary); color: #fff; padding: 12px 28px; border-radius: 50px; font-weight: 700; font-size: 0.95rem; }
         .footer-bottom { max-width: 1300px; margin: 40px auto 0; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.08); text-align: center; font-size: 0.85rem; color: #6b7280; }
 
+        @media screen and (max-width: 1024px) {
+            .slide-item-studio { flex: 0 0 calc((100% - 32px) / 3); }
+            .slide-item-promo { flex: 0 0 calc((100% - 16px) / 2); }
+            .slide-item-video { flex: 0 0 calc((100% - 32px) / 3); }
+        }
         @media screen and (max-width: 768px) {
             .menu-toggle { display: flex; }
             .nav-container { position: fixed; top: 0; left: -100%; width: 260px; height: 100vh; background: #fff; flex-direction: column; align-items: flex-start; padding: 90px 25px; transition: 0.3s; z-index: 999; }
@@ -157,7 +162,7 @@
             .hero-banner-section { height: 350px; }
             .hero-banner-content h1 { font-size: 2.1rem; }
             .about-grid-container { grid-template-columns: 1fr; }
-            .slide-item-studio, .slide-item-promo, .slide-item-video { flex: 0 0 80%; }
+            .slide-item-studio, .slide-item-promo, .slide-item-video { flex: 0 0 82%; }
             .slider-btn { width: 35px; height: 35px; font-size: 1.1rem; }
             .slider-btn-left { left: -10px; }
             .slider-btn-right { right: -10px; }
@@ -345,8 +350,19 @@
 
         function scrollSlider(elementId, direction) {
             const container = document.getElementById(elementId);
-            const scrollAmount = 300 * direction;
+            const scrollAmount = 260 * direction;
             container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+
+        function attachAutoPauseListeners() {
+            const allVideos = document.querySelectorAll('.auto-pause-video');
+            allVideos.forEach(vid => {
+                vid.onplay = () => {
+                    allVideos.forEach(otherVid => {
+                        if (otherVid !== vid) otherVid.pause();
+                    });
+                };
+            });
         }
 
         function applyCMS() {
@@ -408,7 +424,7 @@
             document.getElementById('studioGrid').innerHTML = studiosList.map(s => `
                 <div class="slide-item-studio">
                     <div class="card-item">
-                        ${s.img && s.img.trim() !== '' ? `<div style="width:100%; height:460px; overflow:hidden; background:#fff;"><img src="${s.img}" alt="${s.title}" style="width: 100%; height: 460px; object-fit: cover; display:block;" onerror="this.style.display='none'"></div>` : `<div class="empty-portrait-box"></div>`}
+                        ${s.img && s.img.trim() !== '' ? `<div style="width:100%; height:460px; overflow:hidden; background:#fff;"><img src="${s.img}" alt="${s.title}" style="width: 100%; height: 460px; object-fit: cover; display:block;" onerror="this.parentElement.outerHTML='<div class=\\'empty-portrait-box\\'></div>'"></div>` : `<div class="empty-portrait-box"></div>`}
                         <div class="card-body">
                             <div>
                                 <h3>${s.title || 'Nama Studio'}</h3>
@@ -424,7 +440,7 @@
             document.getElementById('promoGrid').innerHTML = promosList.map(p => `
                 <div class="slide-item-promo">
                     <div class="card-item">
-                        ${p.img && p.img.trim() !== '' ? `<div style="width:100%; height:460px; overflow:hidden; background:#fff;"><img src="${p.img}" alt="${p.title}" style="width: 100%; height: 460px; object-fit: cover; display:block;" onerror="this.style.display='none'"></div>` : `<div class="empty-portrait-box"></div>`}
+                        ${p.img && p.img.trim() !== '' ? `<div style="width:100%; height:460px; overflow:hidden; background:#fff;"><img src="${p.img}" alt="${p.title}" style="width: 100%; height: 460px; object-fit: cover; display:block;" onerror="this.parentElement.outerHTML='<div class=\\'empty-portrait-box\\'></div>'"></div>` : `<div class="empty-portrait-box"></div>`}
                         <div class="card-body">
                             <div>
                                 <span class="badge-tag">${p.badge || 'PROMO'}</span>
@@ -436,17 +452,19 @@
                 </div>
             `).join('');
 
-            // Render Videos
+            // Render Videos (Hanya merender video yang benar-benar valid; jika kosong/gagal dimuat otomatis menjadi kotak putih bersih)
             const videosList = (cms.videos && cms.videos.length > 0) ? cms.videos : defaultCMS.videos;
             document.getElementById('videoGrid').innerHTML = videosList.map(v => {
                 let mediaContent = `<div class="empty-portrait-video"></div>`;
-                if (v.url && v.url !== '#' && v.url.trim() !== '' && !v.url.startsWith('[')) {
-                    let cleanUrl = v.url.replace(/^#/, '').trim();
+                let rawUrl = (v && v.url) ? String(v.url).trim() : '';
+
+                // Abaikan nilai placeholder lama seperti '#' atau 'images/video-1.mp4'
+                if (rawUrl !== '' && rawUrl !== '#' && rawUrl !== 'images/video-1.mp4' && !rawUrl.startsWith('[')) {
+                    let cleanUrl = rawUrl.replace(/^#/, '').trim();
                     if (cleanUrl.startsWith('idb://')) {
                         const idbKey = cleanUrl.replace('idb://', '');
-                        mediaContent = `<video class="auto-pause-video" data-idb-key="${idbKey}" controls playsinline loop style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8; background:#000;"></video>`;
-                    } else if (cleanUrl.endsWith('.mp4') || cleanUrl.startsWith('blob:') || cleanUrl.startsWith('data:video') || cleanUrl.includes('supabase.co') || cleanUrl.includes('images/')) {
-                        mediaContent = `<video class="auto-pause-video" src="${cleanUrl}" controls playsinline loop style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8; background:#000;"></video>`;
+                        // Tampilkan kotak putih dulu sampai terbukti ada file video di IndexedDB
+                        mediaContent = `<div class="empty-portrait-video" data-idb-slot="${idbKey}"></div>`;
                     } else if (cleanUrl.includes('tiktok.com') || cleanUrl.includes('instagram.com')) {
                         let platformName = cleanUrl.includes('tiktok.com') ? 'TikTok' : 'Instagram';
                         mediaContent = `<div style="position:relative; width:100%; height:480px; border-radius:24px; border:2px solid #fbcfe8; overflow:hidden; background:#111; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
@@ -457,35 +475,27 @@
                                 <a href="${cleanUrl}" target="_blank" style="background:#fff; color:var(--secondary); padding:10px 24px; border-radius:50px; font-weight:800; font-size:0.9rem; text-decoration:none; box-shadow:0 4px 15px rgba(0,0,0,0.3); transition:0.2s;">Buka Tautan →</a>
                             </div>
                         </div>`;
-                    } else {
-                        mediaContent = `<video class="auto-pause-video" src="${cleanUrl}" controls playsinline loop style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8; background:#000;"></video>`;
+                    } else if (cleanUrl.endsWith('.mp4') || cleanUrl.startsWith('blob:') || cleanUrl.startsWith('data:video') || cleanUrl.startsWith('http')) {
+                        mediaContent = `<video class="auto-pause-video" src="${cleanUrl}" controls playsinline loop style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8; background:#000;" onerror="this.outerHTML='<div class=\\'empty-portrait-video\\'></div>'"></video>`;
                     }
                 }
                 return `<div class="slide-item-video">${mediaContent}</div>`;
             }).join('');
 
-            // Muat file video MP4 dari ArrayBuffer IndexedDB & pasang Auto-Pause
+            // Muat file video MP4 dari IndexedDB hanya untuk slot yang memiliki data valid
             setTimeout(async () => {
-                const idbVideos = document.querySelectorAll('video[data-idb-key]');
-                for (const vidEl of idbVideos) {
-                    const key = vidEl.getAttribute('data-idb-key');
+                const idbSlots = document.querySelectorAll('[data-idb-slot]');
+                for (const slotEl of idbSlots) {
+                    const key = slotEl.getAttribute('data-idb-slot');
                     const record = await getMediaFromIDB(key);
-                    if (record) {
+                    if (record && (record instanceof Blob || record.buffer)) {
                         const blob = (record instanceof Blob) ? record : new Blob([record.buffer], { type: record.type || 'video/mp4' });
-                        vidEl.src = URL.createObjectURL(blob);
-                        vidEl.load();
+                        const blobUrl = URL.createObjectURL(blob);
+                        slotEl.outerHTML = `<video class="auto-pause-video" src="${blobUrl}" controls playsinline loop style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8; background:#000;"></video>`;
                     }
                 }
-
-                const allVideos = document.querySelectorAll('.auto-pause-video');
-                allVideos.forEach(vid => {
-                    vid.addEventListener('play', () => {
-                        allVideos.forEach(otherVid => {
-                            if (otherVid !== vid) otherVid.pause();
-                        });
-                    });
-                });
-            }, 150);
+                attachAutoPauseListeners();
+            }, 100);
 
             if (cms && cms.footer) {
                 document.getElementById('fBrand').textContent = cms.footer.brand;
@@ -521,7 +531,6 @@
             applyCMS();
         }
 
-        // Otomatis perbarui tampilan saat berpindah dari tab Admin ke tab Frontend
         window.addEventListener('storage', () => { syncLatestCMS(); });
         window.addEventListener('focus', () => { syncLatestCMS(); });
 
