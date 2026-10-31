@@ -10,7 +10,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background: var(--bg-main); color: var(--secondary); line-height: 1.6; }
         header { display: flex; justify-content: space-between; align-items: center; height: 85px; padding: 0 4%; background: var(--primary); position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        .logo-container { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+        .logo-container { display: flex; align-items: center; gap: 12px; text-decoration: none; z-index: 1001; }
         .brand-logo-img { width: 42px; height: 42px; object-fit: contain; border-radius: 50%; border: 2px solid #fff; }
         .logo { font-size: 1.4rem; font-weight: 800; letter-spacing: 2px; color: #fff; }
         .logo span { color: #ffe4e6; }
@@ -21,7 +21,7 @@
         .lang-switcher { display: flex; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); border-radius: 50px; padding: 2px; }
         .lang-btn { background: transparent; border: none; color: #fff; padding: 6px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: 50px; }
         .lang-btn.active { background: #fff; color: var(--primary); }
-        .menu-toggle { display: none; flex-direction: column; justify-content: space-between; width: 28px; height: 21px; background: transparent; border: none; cursor: pointer; }
+        .menu-toggle { display: none; flex-direction: column; justify-content: space-between; width: 28px; height: 21px; background: transparent; border: none; cursor: pointer; z-index: 1001; }
         .menu-toggle span { display: block; width: 100%; height: 3px; background-color: #fff; border-radius: 2px; }
 
         .hero-banner-section {
@@ -51,7 +51,6 @@
         .location-card { background: #fff; border: 1px solid #fbcfe8; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 25px rgba(255,182,193,0.18); display: flex; flex-direction: column; height: 100%; transition: 0.3s; }
         .location-card:hover { transform: translateY(-6px); border-color: var(--primary); }
 
-        /* KOTAK PLACEHOLDER FOTO LANSKAP (MENDATAR) */
         .empty-landscape-location {
             width: 100%; height: 210px; background: #ffffff; border-bottom: 2px solid #fbcfe8;
             display: flex; align-items: center; justify-content: center; box-shadow: inset 0 4px 15px rgba(255, 182, 193, 0.1);
@@ -130,9 +129,16 @@
         <div class="footer-content">
             <div class="footer-left">
                 <h3 id="fBrand">OH SNAP! Photobox Group</h3>
-                <address><strong data-en="Branches:" data-id="Cabang:">Cabang:</strong> <span id="fBranches">Kediri Mall Lt.5, Plaza Cilacap Lt.3, Laksana Baru Lt.3, Plaza Pekalongan Lt.2, Yogya Pemalang Lt.3</span></address>
-                <p>Instagram: <a id="fIg" href="https://www.instagram.com/ohsnap_photobox" target="_blank">@ohsnap_photobox</a></p>
-                <p>TikTok: <a id="fTt" href="https://www.tiktok.com/@ohsnap_photobox" target="_blank">@ohsnap_photobox</a></p>
+                <address><strong data-en="Branches:" data-id="Cabang:">Cabang:</strong> <span id="fBranches">Kediri Mall Lt.5, Plaza Cilacap Lt.3</span></address>
+                <p>Instagram: <a id="fIg" href="#" target="_blank">@ohsnap_photobox</a></p>
+                <p>TikTok: <a id="fTt" href="#" target="_blank">@ohsnap_photobox</a></p>
+                <div class="footer-helpdesk">
+                    <h4 data-en="Helpdesk" data-id="Bantuan">Helpdesk</h4>
+                    <ul>
+                        <li><a href="resend.html" data-en="Resend Softcopy" data-id="Kirim Ulang Softcopy">Resend Softcopy</a></li>
+                        <li><a href="login.html" data-en="Admin Login" data-id="Masuk Admin">Login Admin</a></li>
+                    </ul>
+                </div>
             </div>
             <a href="lokasi.html" class="footer-location-card">
                 <h4 id="fCardTitle">Find nearby OH SNAP! Studio</h4>
@@ -172,10 +178,9 @@
                 const b = cms.banners.lokasi;
                 document.getElementById('heroTitle').innerHTML = currentLang === 'en' ? (b.titleEn || b.titleId) : b.titleId;
                 document.getElementById('heroSub').textContent = currentLang === 'en' ? (b.subEn || b.subId) : b.subId;
-                if (b.imgUrl) document.getElementById('heroBannerBg').style.backgroundImage = `url('${b.imgUrl}')`;
+                if (b.imgUrl && b.imgUrl.trim() !== '') document.getElementById('heroBannerBg').style.backgroundImage = `url('${b.imgUrl}')`;
             }
 
-            // Render Kartu Lokasi Format Lanskap (Grid Rapi ke Samping & Turun ke Bawah)
             document.getElementById('locationsGrid').innerHTML = list.map(l => `
                 <div class="location-card">
                     ${l.img && l.img.trim() !== '' ? `<img src="${l.img}" alt="${l.name}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'empty-landscape-location\'></div>';">` : `<div class="empty-landscape-location"></div>`}
@@ -193,8 +198,11 @@
             if (cms && cms.footer) {
                 document.getElementById('fBrand').textContent = cms.footer.brand;
                 document.getElementById('fBranches').textContent = cms.footer.branches;
-                document.getElementById('fCardTitle').textContent = cms.footer.cardTitle;
-                document.getElementById('fCardDesc').textContent = cms.footer.cardDesc;
+                const ig = document.getElementById('fIg'); if(ig) { ig.textContent = cms.footer.igName; ig.href = cms.footer.igUrl || '#'; }
+                const tt = document.getElementById('fTt'); if(tt) { tt.textContent = cms.footer.ttName; tt.href = cms.footer.ttUrl || '#'; }
+
+                document.getElementById('fCardTitle').textContent = currentLang === 'en' ? (cms.footer.cardTitleEn || 'Find nearby OH SNAP! Studio') : (cms.footer.cardTitleId || 'Find nearby OH SNAP! Studio');
+                document.getElementById('fCardDesc').textContent = currentLang === 'en' ? (cms.footer.cardDescEn || 'Find the nearest booth and studio in your city to capture your special moments today!') : (cms.footer.cardDescId || 'Temukan booth dan studio terdekat di kotamu untuk abadikan momen serumu hari ini!');
                 document.getElementById('fCopy').textContent = cms.footer.copyright;
             }
         }
