@@ -11,7 +11,7 @@
         body { background: var(--bg-main); color: var(--secondary); line-height: 1.6; }
         
         header { display: flex; justify-content: space-between; align-items: center; height: 85px; padding: 0 4%; background: var(--primary); position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        .logo-container { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+        .logo-container { display: flex; align-items: center; gap: 12px; text-decoration: none; z-index: 1001; }
         .brand-logo-img { width: 42px; height: 42px; object-fit: contain; border-radius: 50%; border: 2px solid #fff; }
         .logo { font-size: 1.4rem; font-weight: 800; letter-spacing: 2px; color: #fff; }
         .logo span { color: #ffe4e6; }
@@ -22,7 +22,7 @@
         .lang-switcher { display: flex; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); border-radius: 50px; padding: 2px; }
         .lang-btn { background: transparent; border: none; color: #fff; padding: 6px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: 50px; }
         .lang-btn.active { background: #fff; color: var(--primary); }
-        .menu-toggle { display: none; flex-direction: column; justify-content: space-between; width: 28px; height: 21px; background: transparent; border: none; cursor: pointer; }
+        .menu-toggle { display: none; flex-direction: column; justify-content: space-between; width: 28px; height: 21px; background: transparent; border: none; cursor: pointer; z-index: 1001; }
         .menu-toggle span { display: block; width: 100%; height: 3px; background-color: #fff; border-radius: 2px; }
 
         .hero-banner-section {
@@ -63,7 +63,7 @@
         .slider-container::-webkit-scrollbar { display: none; }
 
         .slide-item-service {
-            flex: 0 0 calc(33.333% - 17px); /* Pas 3 kolom di desktop */
+            flex: 0 0 calc(33.333% - 17px);
             min-width: 290px;
         }
 
@@ -98,7 +98,6 @@
         }
         .service-card:hover { transform: translateY(-6px); border-color: var(--primary); }
         
-        /* KOTAK PLACEHOLDER FOTO PORTRAIT 9:16 UNTUK LAYANAN */
         .empty-portrait-service {
             width: 100%; height: 340px; background: #ffffff; border: 2px solid #fbcfe8; border-radius: 16px;
             display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(255, 182, 193, 0.15);
@@ -189,6 +188,13 @@
                 <address><strong data-en="Branches:" data-id="Cabang:">Cabang:</strong> <span id="fBranches">Kediri Mall Lt.5, Plaza Cilacap Lt.3, Laksana Baru Lt.3, Plaza Pekalongan Lt.2, Yogya Pemalang Lt.3</span></address>
                 <p>Instagram: <a id="fIg" href="https://www.instagram.com/ohsnap_photobox" target="_blank">@ohsnap_photobox</a></p>
                 <p>TikTok: <a id="fTt" href="https://www.tiktok.com/@ohsnap_photobox" target="_blank">@ohsnap_photobox</a></p>
+                <div class="footer-helpdesk">
+                    <h4 data-en="Helpdesk" data-id="Bantuan">Helpdesk</h4>
+                    <ul>
+                        <li><a href="resend.html" data-en="Resend Softcopy" data-id="Kirim Ulang Softcopy">Resend Softcopy</a></li>
+                        <li><a href="login.html" data-en="Admin Login" data-id="Masuk Admin">Login Admin</a></li>
+                    </ul>
+                </div>
             </div>
             <a href="lokasi.html" class="footer-location-card">
                 <h4 id="fCardTitle">Find nearby OH SNAP! Studio</h4>
@@ -233,10 +239,9 @@
                 const b = cms.banners.layanan;
                 document.getElementById('heroTitle').innerHTML = currentLang === 'en' ? (b.titleEn || b.titleId) : b.titleId;
                 document.getElementById('heroSub').textContent = currentLang === 'en' ? (b.subEn || b.subId) : b.subId;
-                if (b.imgUrl) document.getElementById('heroBannerBg').style.backgroundImage = `url('${b.imgUrl}')`;
+                if (b.imgUrl && b.imgUrl.trim() !== '') document.getElementById('heroBannerBg').style.backgroundImage = `url('${b.imgUrl}')`;
             }
 
-            // Render Kartu Layanan (Format Portrait 9:16)
             document.getElementById('servicesGrid').innerHTML = list.map(srv => `
                 <div class="slide-item-service">
                     <div class="service-card">
@@ -250,7 +255,6 @@
                 </div>
             `).join('');
 
-            // Tampilkan tombol panah < dan > HANYA JIKA item lebih dari 3
             const btnLeft = document.getElementById('btnLeft');
             const btnRight = document.getElementById('btnRight');
             if (list.length > 3) {
@@ -264,8 +268,11 @@
             if (cms && cms.footer) {
                 document.getElementById('fBrand').textContent = cms.footer.brand;
                 document.getElementById('fBranches').textContent = cms.footer.branches;
-                document.getElementById('fCardTitle').textContent = cms.footer.cardTitle;
-                document.getElementById('fCardDesc').textContent = cms.footer.cardDesc;
+                const ig = document.getElementById('fIg'); if(ig) { ig.textContent = cms.footer.igName; ig.href = cms.footer.igUrl || '#'; }
+                const tt = document.getElementById('fTt'); if(tt) { tt.textContent = cms.footer.ttName; tt.href = cms.footer.ttUrl || '#'; }
+
+                document.getElementById('fCardTitle').textContent = currentLang === 'en' ? (cms.footer.cardTitleEn || 'Find nearby OH SNAP! Studio') : (cms.footer.cardTitleId || 'Find nearby OH SNAP! Studio');
+                document.getElementById('fCardDesc').textContent = currentLang === 'en' ? (cms.footer.cardDescEn || 'Find the nearest booth and studio in your city to capture your special moments today!') : (cms.footer.cardDescId || 'Temukan booth dan studio terdekat di kotamu untuk abadikan momen serumu hari ini!');
                 document.getElementById('fCopy').textContent = cms.footer.copyright;
             }
         }
