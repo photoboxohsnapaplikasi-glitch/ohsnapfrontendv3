@@ -8,7 +8,7 @@
     <style>
         :root { --primary: #ff1493; --secondary: #2b4c7e; --bg-main: #fff0f5; --footer-bg: #18171d; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background: var(--bg-main); color: var(--secondary); line-height: 1.6; }
+        body { background: var(--bg-main); color: var(--secondary); line-height: 1.6; overflow-x: hidden; }
         
         header { display: flex; justify-content: space-between; align-items: center; height: 85px; padding: 0 4%; background: var(--primary); position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
         .logo-container { display: flex; align-items: center; gap: 12px; text-decoration: none; z-index: 1001; }
@@ -92,7 +92,7 @@
         }
         .slider-container {
             display: flex;
-            gap: 20px;
+            gap: 16px;
             overflow-x: auto;
             scroll-behavior: smooth;
             width: 100%;
@@ -101,9 +101,9 @@
         }
         .slider-container::-webkit-scrollbar { display: none; }
 
-        .slide-item-studio { flex: 0 0 calc(25% - 15px); min-width: 250px; }
-        .slide-item-promo { flex: 0 0 calc(33.333% - 14px); min-width: 280px; }
-        .slide-item-video { flex: 0 0 calc(20% - 16px); min-width: 240px; }
+        .slide-item-studio { flex: 0 0 280px; }
+        .slide-item-promo { flex: 0 0 320px; }
+        .slide-item-video { flex: 0 0 230px; }
 
         .slider-btn {
             position: absolute;
@@ -146,11 +146,6 @@
         .location-btn-action { background: var(--primary); color: #fff; padding: 12px 28px; border-radius: 50px; font-weight: 700; font-size: 0.95rem; }
         .footer-bottom { max-width: 1300px; margin: 40px auto 0; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.08); text-align: center; font-size: 0.85rem; color: #6b7280; }
 
-        @media screen and (max-width: 1024px) {
-            .slide-item-studio { flex: 0 0 calc(33.333% - 14px); }
-            .slide-item-promo { flex: 0 0 calc(50% - 12px); }
-            .slide-item-video { flex: 0 0 calc(33.333% - 14px); }
-        }
         @media screen and (max-width: 768px) {
             .menu-toggle { display: flex; }
             .nav-container { position: fixed; top: 0; left: -100%; width: 260px; height: 100vh; background: #fff; flex-direction: column; align-items: flex-start; padding: 90px 25px; transition: 0.3s; z-index: 999; }
@@ -162,7 +157,7 @@
             .hero-banner-section { height: 350px; }
             .hero-banner-content h1 { font-size: 2.1rem; }
             .about-grid-container { grid-template-columns: 1fr; }
-            .slide-item-studio, .slide-item-promo, .slide-item-video { flex: 0 0 calc(100% - 0px); }
+            .slide-item-studio, .slide-item-promo, .slide-item-video { flex: 0 0 80%; }
             .slider-btn { width: 35px; height: 35px; font-size: 1.1rem; }
             .slider-btn-left { left: -10px; }
             .slider-btn-right { right: -10px; }
@@ -323,7 +318,7 @@
 
         function scrollSlider(elementId, direction) {
             const container = document.getElementById(elementId);
-            const scrollAmount = 320 * direction;
+            const scrollAmount = 300 * direction;
             container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
         }
 
@@ -342,12 +337,16 @@
                     document.getElementById('heroSub').textContent = currentLang === 'en' ? (b.subEn || b.subId) : b.subId;
                     if (b.imgUrl) document.getElementById('heroBannerBg').style.backgroundImage = `url('${b.imgUrl}')`;
                 }
-                // Sinkronisasi mutlak pembacaan foto About Story dari admin
-                if (cms.banners.about) {
-                    if (cms.banners.about.imgUrl) {
-                        const aboutImgEl = document.getElementById('aboutImg');
-                        if (aboutImgEl) aboutImgEl.src = cms.banners.about.imgUrl;
+                // Sinkronisasi mutlak pembacaan foto About Story dari admin (Mendukung semua struktur key)
+                const aboutImgEl = document.getElementById('aboutImg');
+                if (aboutImgEl) {
+                    let aboutSrc = 'images/about-img.jpg';
+                    if (cms.banners.about && cms.banners.about.imgUrl && cms.banners.about.imgUrl.trim() !== '') {
+                        aboutSrc = cms.banners.about.imgUrl;
+                    } else if (cms.banners.home && cms.banners.home.aboutImgUrl && cms.banners.home.aboutImgUrl.trim() !== '') {
+                        aboutSrc = cms.banners.home.aboutImgUrl;
                     }
+                    aboutImgEl.src = aboutSrc;
                 }
             }
             if (cms.titles) {
@@ -392,13 +391,27 @@
                 </div>
             `).join('');
 
-            // Render Videos (Pemutar file MP4 lokal 9:16 penuh, terkunci loop, auto-pause)
+            // Render Videos (Cerdas: File MP4 lokal diputar langsung, Link TikTok/IG menampilkan tombol interaktif yang aman & rapi)
             const videosList = (cms.videos && cms.videos.length > 0) ? cms.videos : defaultCMS.videos;
             document.getElementById('videoGrid').innerHTML = videosList.map(v => {
                 let mediaContent = `<div class="empty-portrait-video"></div>`;
                 if (v.url && v.url !== '#' && v.url.trim() !== '') {
                     let cleanUrl = v.url.replace(/^#/, '').trim();
-                    mediaContent = `<video class="auto-pause-video" src="${cleanUrl}" controls playsinline loop style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8; background:#000;"></video>`;
+                    if (cleanUrl.endsWith('.mp4') || cleanUrl.startsWith('blob:') || cleanUrl.includes('supabase.co') || cleanUrl.includes('images/')) {
+                        mediaContent = `<video class="auto-pause-video" src="${cleanUrl}" controls playsinline loop style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8; background:#000;"></video>`;
+                    } else if (cleanUrl.includes('tiktok.com') || cleanUrl.includes('instagram.com')) {
+                        let platformName = cleanUrl.includes('tiktok.com') ? 'TikTok' : 'Instagram';
+                        mediaContent = `<div style="position:relative; width:100%; height:480px; border-radius:24px; border:2px solid #fbcfe8; overflow:hidden; background:#111; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+                            <div style="position:absolute; inset:0; background:linear-gradient(135deg, #2b4c7e 0%, #ff1493 100%); opacity:0.85;"></div>
+                            <div style="position:relative; z-index:2; padding:20px; display:flex; flex-direction:column; align-items:center; gap:14px;">
+                                <div style="width:60px; height:60px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.5rem; box-shadow:0 6px 20px rgba(0,0,0,0.4);">▶</div>
+                                <span style="color:#fff; font-weight:700; font-size:1.05rem; text-shadow:0 2px 8px rgba(0,0,0,0.8);">Tonton di ${platformName}</span>
+                                <a href="${cleanUrl}" target="_blank" style="background:#fff; color:var(--secondary); padding:10px 24px; border-radius:50px; font-weight:800; font-size:0.9rem; text-decoration:none; box-shadow:0 4px 15px rgba(0,0,0,0.3); transition:0.2s;">Buka Tautan →</a>
+                            </div>
+                        </div>`;
+                    } else {
+                        mediaContent = `<video class="auto-pause-video" src="${cleanUrl}" controls playsinline loop style="width: 100%; height: 480px; object-fit: cover; border-radius: 24px; border: 2px solid #fbcfe8; background:#000;"></video>`;
+                    }
                 }
                 return `<div class="slide-item-video">${mediaContent}</div>`;
             }).join('');
