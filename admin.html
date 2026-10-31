@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Admin - OH SNAP! Photobox</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Pustaka Supabase untuk Sinkronisasi -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary: #ff1493;
@@ -410,11 +408,6 @@
                 }
             }
         })();
-
-        // Konfigurasi Supabase untuk Sinkronisasi Multi-PC & HP
-        const SUPABASE_URL = 'https://nwmvjmhrqwrvnlypdjxe.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_JeGNoytBoJBCQ6Xqwe_PQA_hILpX8IK';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const API_URL = 'http://localhost:3000/api';
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyum2HVg2InZDhEyeata3I2hTbPUQzzqyKHsEtgA9Z3vRCF2CeTjwzGTCHd4tszlOMm/exec';
@@ -1408,28 +1401,17 @@
             }
         }
 
-        // FUNGSI SIMPAN TERHUBUNG KE SUPABASE (Sinkronisasi Semua Perangkat)
-        async function saveAllCMS() {
+        function saveAllCMS() {
             updateBannerState();
             updateTitlesState();
             updateFooterState();
             persistData();
-
-            try {
-                const { error } = await supabaseClient
-                    .from('cms_settings')
-                    .upsert({ id: 1, data: cmsData, updated_at: new Date() });
-
-                if (error) {
-                    console.error('Gagal sinkron:', error);
-                    showToast('❌ Gagal sinkron ke database online');
-                } else {
-                    showToast('✅ Berhasil disimpan & disinkronkan ke semua perangkat!');
-                }
-            } catch (err) {
-                console.error(err);
-                showToast('✅ Berhasil disimpan secara lokal!');
-            }
+            fetch(`${API_URL}/cms`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cmsData)
+            }).catch(() => {});
+            showToast('✅ Berhasil disimpan!');
         }
 
         window.addEventListener('beforeunload', () => {
@@ -1456,30 +1438,10 @@
             renderAdminTable();
         }
 
-        // FUNGSI TARIK DATA OTOMATIS DARI SUPABASE SAAT HALAMAN DIBUKA
         document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('cms_settings')
-                    .select('data')
-                    .eq('id', 1)
-                    .single();
-
-                if (data && data.data) {
-                    cmsData = mergeWithDefault(data.data);
-                    saveCMSBackupToIDB(cmsData);
-                    try { localStorage.setItem('ohsnap_cms_data', JSON.stringify(cmsData)); } catch(e){}
-                } else {
-                    const idbBackup = await getMediaFromIDB('cms_full_backup');
-                    if (idbBackup && (!cmsData.lastUpdated || (idbBackup.lastUpdated && idbBackup.lastUpdated >= cmsData.lastUpdated))) {
-                        cmsData = mergeWithDefault(idbBackup);
-                    }
-                }
-            } catch (err) {
-                const idbBackup = await getMediaFromIDB('cms_full_backup');
-                if (idbBackup) {
-                    cmsData = mergeWithDefault(idbBackup);
-                }
+            const idbBackup = await getMediaFromIDB('cms_full_backup');
+            if (idbBackup && (!cmsData.lastUpdated || (idbBackup.lastUpdated && idbBackup.lastUpdated >= cmsData.lastUpdated))) {
+                cmsData = mergeWithDefault(idbBackup);
             }
             initAllRenders();
             loadResendData();
