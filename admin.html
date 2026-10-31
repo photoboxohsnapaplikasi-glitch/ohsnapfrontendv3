@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Admin - OH SNAP! Photobox</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+   <style>
         :root {
             --primary: #ff1493;
             --secondary: #2b4c7e;
@@ -1401,17 +1402,37 @@
             }
         }
 
-        function saveAllCMS() {
+       // Inisialisasi Supabase
+        const SUPABASE_URL = 'https://nwmvjmhrqwrvnlypdjxe.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_JeGNoytBoJBCQ6Xqwe_PQA_hILpX8IK';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function saveAllCMS() {
             updateBannerState();
             updateTitlesState();
             updateFooterState();
             persistData();
+            
             fetch(`${API_URL}/cms`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(cmsData)
             }).catch(() => {});
-            showToast('✅ Berhasil disimpan!');
+
+            // Kirim data ke Supabase agar sinkron online di semua perangkat
+            try {
+                const { error } = await supabaseClient
+                    .from('cms_settings')
+                    .upsert({ id: 1, data: cmsData, updated_at: new Date() });
+
+                if (error) {
+                    console.error('Gagal sinkron Supabase:', error);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+
+            showToast('✅ Berhasil disimpan & disinkronkan!');
         }
 
         window.addEventListener('beforeunload', () => {
