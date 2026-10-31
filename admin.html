@@ -1460,6 +1460,23 @@
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
+            // Tarik data terbaru dari Supabase agar langsung sinkron antar perangkat
+            try {
+                const { data, error } = await supabaseClient
+                    .from('cms_settings')
+                    .select('data')
+                    .eq('id', 1)
+                    .single();
+
+                if (data && data.data) {
+                    cmsData = mergeWithDefault(data.data);
+                    saveCMSBackupToIDB(cmsData);
+                    try { localStorage.setItem('ohsnap_cms_data', JSON.stringify(cmsData)); } catch(e){}
+                }
+            } catch (err) {
+                console.log('Menggunakan data lokal');
+            }
+
             const idbBackup = await getMediaFromIDB('cms_full_backup');
             if (idbBackup && (!cmsData.lastUpdated || (idbBackup.lastUpdated && idbBackup.lastUpdated >= cmsData.lastUpdated))) {
                 cmsData = mergeWithDefault(idbBackup);
